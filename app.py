@@ -1,6 +1,68 @@
 import streamlit as st
 from datetime import datetime
 
+# カスタムCSSの追加
+st.markdown("""
+<style>
+    .main {
+        background-color: #f8f9fa;
+    }
+    .stButton>button {
+        width: 100%;
+        border-radius: 20px;
+        background-color: #4CAF50;
+        color: white;
+        font-weight: bold;
+        padding: 10px 20px;
+        border: none;
+        transition: all 0.3s ease;
+    }
+    .stButton>button:hover {
+        background-color: #45a049;
+        transform: scale(1.02);
+    }
+    .stTextInput>div>div>input {
+        border-radius: 10px;
+    }
+    .stSelectbox>div>div>select {
+        border-radius: 10px;
+    }
+    .stTextArea>div>div>textarea {
+        border-radius: 10px;
+    }
+    .stDateInput>div>div>input {
+        border-radius: 10px;
+    }
+    .stNumberInput>div>div>input {
+        border-radius: 10px;
+    }
+    .css-1d391kg {
+        background-color: white;
+        border-radius: 10px;
+        padding: 20px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .css-1v0mbdj {
+        margin-bottom: 20px;
+    }
+    .stAlert {
+        border-radius: 10px;
+    }
+    .stSuccess {
+        background-color: #d4edda;
+        color: #155724;
+        border-radius: 10px;
+        padding: 10px;
+    }
+    .stError {
+        background-color: #f8d7da;
+        color: #721c24;
+        border-radius: 10px;
+        padding: 10px;
+    }
+</style>
+""", unsafe_allow_html=True)
+
 # 選択肢の定義
 INDUSTRIES = [
     "IT・テクノロジー",
@@ -114,35 +176,53 @@ def generate_intern_info(company, industry, location, period, position, grade, s
     }
 
 def main():
-    st.title("インターン情報自動作成ツール")
+    # ヘッダー
+    st.markdown("""
+    <div style='text-align: center; margin-bottom: 30px;'>
+        <h1 style='color: #2c3e50;'>インターン情報自動作成ツール</h1>
+        <p style='color: #7f8c8d;'>必要な情報を入力して、インターン情報を作成しましょう</p>
+    </div>
+    """, unsafe_allow_html=True)
     
-    # サイドバーにロゴや説明を追加
-    st.sidebar.title("About")
-    st.sidebar.info(
-        "このアプリはインターン情報を自動生成するツールです。\n"
-        "必要な情報を入力して、インターン情報を作成しましょう。"
-    )
+    # サイドバー
+    with st.sidebar:
+        st.markdown("""
+        <div style='text-align: center;'>
+            <h2 style='color: #2c3e50;'>About</h2>
+            <p style='color: #7f8c8d;'>このアプリはインターン情報を自動生成するツールです。</p>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        st.info("""
+        💡 **使い方**
+        1. 各項目を入力・選択
+        2. 「インターン情報を生成」ボタンをクリック
+        3. 生成された情報を確認
+        """)
     
     # メインコンテンツ
     col1, col2 = st.columns(2)
     
     with col1:
-        company = st.text_input("企業名")
+        st.markdown("### 基本情報")
+        company = st.text_input("企業名", placeholder="例: 株式会社〇〇")
         industry = st.selectbox("業界", INDUSTRIES)
-        location = st.text_input("勤務地")
+        location = st.text_input("勤務地", placeholder="例: 東京都渋谷区")
         period = st.selectbox("インターン期間", PERIODS)
         position = st.selectbox("インターン職種", POSITIONS)
         grade = st.selectbox("募集対象", GRADES)
     
     with col2:
+        st.markdown("### 詳細情報")
         salary = st.selectbox("報酬", SALARIES)
         selection_process = st.selectbox("選考フロー", SELECTION_PROCESS)
         deadline = st.date_input("応募締切日")
         start_date = st.date_input("インターン開始予定日")
         capacity = st.number_input("募集人数", min_value=1, step=1)
-        skills = st.text_area("必要なスキル・経験（複数ある場合は改行区切り）")
+        skills = st.text_area("必要なスキル・経験", placeholder="例:\n- Python\n- コミュニケーション能力\n- チームワーク", height=100)
     
-    if st.button("インターン情報を生成"):
+    # 生成ボタン
+    if st.button("インターン情報を生成", key="generate_button"):
         if company and location and skills:
             info = generate_intern_info(
                 company, industry, location, period, position, grade,
@@ -150,14 +230,19 @@ def main():
                 start_date.strftime("%Y-%m-%d"), str(capacity), skills
             )
             
-            st.success("インターン情報が生成されました！")
+            st.success("🎉 インターン情報が生成されました！")
             
             # 結果を表示
-            st.subheader("生成されたインターン情報")
+            st.markdown("### 生成されたインターン情報")
             for k, v in info.items():
-                st.write(f"**{k}**: {v}")
+                st.markdown(f"""
+                <div style='background-color: white; padding: 15px; border-radius: 10px; margin-bottom: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);'>
+                    <strong style='color: #2c3e50;'>{k}:</strong>
+                    <p style='color: #34495e; margin-top: 5px;'>{v}</p>
+                </div>
+                """, unsafe_allow_html=True)
         else:
-            st.error("必須項目（企業名、勤務地、必要なスキル・経験）を入力してください。")
+            st.error("⚠️ 必須項目（企業名、勤務地、必要なスキル・経験）を入力してください。")
 
 if __name__ == "__main__":
     main() 
