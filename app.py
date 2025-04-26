@@ -1,4 +1,4 @@
-import sys
+import streamlit as st
 from datetime import datetime
 
 # 選択肢の定義
@@ -77,28 +77,6 @@ SELECTION_PROCESS = [
     "その他"
 ]
 
-def select_from_list(options, prompt):
-    while True:
-        print(f"\n{prompt}")
-        for i, option in enumerate(options, 1):
-            print(f"{i}. {option}")
-        try:
-            choice = int(input("番号を選択してください: "))
-            if 1 <= choice <= len(options):
-                return options[choice-1]
-            print("無効な選択です。もう一度選択してください。")
-        except ValueError:
-            print("数字を入力してください。")
-
-def input_date(prompt):
-    while True:
-        try:
-            date_str = input(f"{prompt} (YYYY-MM-DD): ")
-            datetime.strptime(date_str, "%Y-%m-%d")
-            return date_str
-        except ValueError:
-            print("正しい日付形式で入力してください（例: 2024-03-15）")
-
 def generate_intern_info(company, industry, location, period, position, grade, salary, 
                         selection_process, deadline, start_date, capacity, skills):
     intern_name = f"{company} {position}インターンシップ ({period})"
@@ -136,26 +114,50 @@ def generate_intern_info(company, industry, location, period, position, grade, s
     }
 
 def main():
-    print("インターン情報自動作成ツール")
-    company = input("企業名を入力してください: ")
-    industry = select_from_list(INDUSTRIES, "業界を選択してください:")
-    location = input("勤務地を入力してください: ")
-    period = select_from_list(PERIODS, "インターン期間を選択してください:")
-    position = select_from_list(POSITIONS, "インターン職種を選択してください:")
-    grade = select_from_list(GRADES, "募集対象を選択してください:")
-    salary = select_from_list(SALARIES, "報酬を選択してください:")
-    selection_process = select_from_list(SELECTION_PROCESS, "選考フローを選択してください:")
-    deadline = input_date("応募締切日を入力してください")
-    start_date = input_date("インターン開始予定日を入力してください")
-    capacity = input("募集人数を入力してください: ")
-    skills = input("必要なスキル・経験を入力してください（複数ある場合はカンマ区切り）: ")
-
-    info = generate_intern_info(company, industry, location, period, position, grade, 
-                              salary, selection_process, deadline, start_date, 
-                              capacity, skills)
-    print("\n--- 自動生成されたインターン情報 ---")
-    for k, v in info.items():
-        print(f"\n{k}: {v}")
+    st.title("インターン情報自動作成ツール")
+    
+    # サイドバーにロゴや説明を追加
+    st.sidebar.title("About")
+    st.sidebar.info(
+        "このアプリはインターン情報を自動生成するツールです。\n"
+        "必要な情報を入力して、インターン情報を作成しましょう。"
+    )
+    
+    # メインコンテンツ
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        company = st.text_input("企業名")
+        industry = st.selectbox("業界", INDUSTRIES)
+        location = st.text_input("勤務地")
+        period = st.selectbox("インターン期間", PERIODS)
+        position = st.selectbox("インターン職種", POSITIONS)
+        grade = st.selectbox("募集対象", GRADES)
+    
+    with col2:
+        salary = st.selectbox("報酬", SALARIES)
+        selection_process = st.selectbox("選考フロー", SELECTION_PROCESS)
+        deadline = st.date_input("応募締切日")
+        start_date = st.date_input("インターン開始予定日")
+        capacity = st.number_input("募集人数", min_value=1, step=1)
+        skills = st.text_area("必要なスキル・経験（複数ある場合は改行区切り）")
+    
+    if st.button("インターン情報を生成"):
+        if company and location and skills:
+            info = generate_intern_info(
+                company, industry, location, period, position, grade,
+                salary, selection_process, deadline.strftime("%Y-%m-%d"),
+                start_date.strftime("%Y-%m-%d"), str(capacity), skills
+            )
+            
+            st.success("インターン情報が生成されました！")
+            
+            # 結果を表示
+            st.subheader("生成されたインターン情報")
+            for k, v in info.items():
+                st.write(f"**{k}**: {v}")
+        else:
+            st.error("必須項目（企業名、勤務地、必要なスキル・経験）を入力してください。")
 
 if __name__ == "__main__":
     main() 
