@@ -4,6 +4,14 @@ from notion_client import Client
 import os
 from dotenv import load_dotenv
 
+# ページ設定
+st.set_page_config(
+    page_title="インターン情報生成ツール",
+    page_icon="🎓",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
+
 # Streamlitの状態を確認
 st.write("Streamlitの状態:")
 st.write(f"Streamlit version: {st.__version__}")
@@ -20,6 +28,14 @@ except Exception as e:
 st.write("デバッグ情報:")
 st.write(f"NOTION_TOKEN exists: {'NOTION_TOKEN' in st.secrets}")
 st.write(f"NOTION_DATABASE_ID exists: {'NOTION_DATABASE_ID' in st.secrets}")
+
+# セッション状態の初期化
+if 'notion_checkbox' not in st.session_state:
+    st.session_state.notion_checkbox = False
+if 'generate_button' not in st.session_state:
+    st.session_state.generate_button = False
+if 'info' not in st.session_state:
+    st.session_state.info = None
 
 # ローカル開発環境用の設定
 if os.path.exists(".env"):
