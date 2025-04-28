@@ -9,7 +9,6 @@ from googleapiclient.discovery import build
 import pickle
 import base64
 from email.mime.text import MIMEText
-from notion_client import Client
 
 # .envファイルから環境変数を読み込む
 load_dotenv()
@@ -21,20 +20,64 @@ st.set_page_config(
     layout="wide"
 )
 
-# スタイルのカスタマイズ
-st.markdown(""" 
+# カスタムCSSの追加
+st.markdown("""
 <style>
-    .css-18e3th9 {
-        padding-top: 0rem;
-        padding-bottom: 10rem;
-        padding-left: 5rem;
-        padding-right: 5rem;
+    .main {
+        background-color: #f8f9fa;
     }
-    .stSidebar > div:first-child {
-        background-color: #f0f2f6;
+    .stButton>button {
+        width: 100%;
+        border-radius: 20px;
+        background-color: #4CAF50;
+        color: white;
+        font-weight: bold;
+        padding: 10px 20px;
+        border: none;
+        transition: all 0.3s ease;
+    }
+    .stButton>button:hover {
+        background-color: #45a049;
+        transform: scale(1.02);
+    }
+    .stTextInput>div>div>input {
+        border-radius: 10px;
+    }
+    .stSelectbox>div>div>select {
+        border-radius: 10px;
+    }
+    .stTextArea>div>div>textarea {
+        border-radius: 10px;
+    }
+    .stDateInput>div>div>input {
+        border-radius: 10px;
+    }
+    .stNumberInput>div>div>input {
+        border-radius: 10px;
     }
     .css-1d391kg {
-        padding-top: 3rem;
+        background-color: white;
+        border-radius: 10px;
+        padding: 20px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .css-1v0mbdj {
+        margin-bottom: 20px;
+    }
+    .stAlert {
+        border-radius: 10px;
+    }
+    .stSuccess {
+        background-color: #d4edda;
+        color: #155724;
+        border-radius: 10px;
+        padding: 10px;
+    }
+    .stError {
+        background-color: #f8d7da;
+        color: #721c24;
+        border-radius: 10px;
+        padding: 10px;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -153,198 +196,6 @@ SELECTION_PROCESS = [
     "その他"
 ]
 
-# フォームの各セクション定義
-sections = [
-    {"title": "基本情報", "fields": [
-        {"label": "企業名*", "key": "company_name", "type": "text"},
-        {"label": "業界", "key": "industry", "type": "select", "options": INDUSTRIES},
-        {"label": "形式", "key": "format_type", "type": "select", "options": WORK_TYPES},
-        {"label": "勤務地*", "key": "location", "type": "text"},
-        {"label": "最寄り駅", "key": "nearest_station", "type": "text"},
-        {"label": "インターン期間", "key": "period", "type": "select", "options": PERIODS},
-        {"label": "インターン職種", "key": "position", "type": "select", "options": POSITIONS},
-        {"label": "募集対象", "key": "grade", "type": "multiselect", "options": GRADES},
-        {"label": "報酬（時給）", "key": "salary", "type": "select", "options": SALARIES},
-        {"label": "交通費", "key": "transportation_fee", "type": "select", "options": TRANSPORTATION_FEES}
-    ]},
-    {"title": "勤務時間", "fields": [
-        {"label": "開始時間", "key": "start_time", "type": "select", "options": TIMES},
-        {"label": "終了時間", "key": "end_time", "type": "select", "options": TIMES},
-        {"label": "勤務日数", "key": "working_days", "type": "select", "options": WORKING_DAYS},
-        {"label": "勤務時間（週）", "key": "working_hours", "type": "number", "min": 0, "step": 1, "value": 0}
-    ]},
-    {"title": "選考情報", "fields": [
-        {"label": "選考フロー", "key": "selection_process", "type": "select", "options": SELECTION_PROCESS},
-        {"label": "応募締切日", "key": "deadline", "type": "date"},
-        {"label": "インターン開始予定日", "key": "start_date", "type": "date"},
-        {"label": "募集人数", "key": "number_of_recruits", "type": "number", "min": 0, "step": 1, "value": 0}
-    ]},
-    {"title": "スキル要件", "fields": [
-        {"label": "必須スキル*", "key": "required_skills", "type": "textarea"},
-        {"label": "歓迎スキル", "key": "preferred_skills", "type": "textarea"}
-    ]}
-]
-
-# フォームデータと現在のステップの初期化
-if "form_data" not in st.session_state:
-    st.session_state.form_data = {}
-if "current_step" not in st.session_state:
-    st.session_state.current_step = 0
-
-def initialize_session_state():
-    for section in sections:
-        for field in section["fields"]:
-            if field["key"] not in st.session_state:
-                st.session_state[field["key"]] = ""
-    if "current_step" not in st.session_state:
-        st.session_state["current_step"] = 0
-
-initialize_session_state()
-
-# セクション名のリストを作成
-section_names = [section["title"] for section in sections]
-
-# サイドバーにセクションのナビゲーションを表示
-st.sidebar.markdown("## セクション")
-for i, section_name in enumerate(section_names):
-    if i == st.session_state.current_step:
-        if st.sidebar.button(f"→ {i+1}. {section_name} (現在)", key=f"btn_current_{i}"):
-            st.session_state.current_step = i
-            st.rerun()
-    else:
-        if st.sidebar.button(f"{i+1}. {section_name}", key=f"btn_{i}"):
-            st.session_state.current_step = i
-            st.rerun()
-
-# プログレスバーの初期化と更新
-progress_bar = st.progress(0)
-current_section_index = st.session_state.current_step
-progress_percentage = (current_section_index + 1) / len(sections)
-progress_bar.progress(progress_percentage)
-
-def display_section(section):
-    st.header(section["title"])
-    for field in section["fields"]:
-        if field["type"] == "text":
-            st.text_input(label=field["label"], key=field["key"])
-        elif field["type"] == "select":
-            st.selectbox(label=field["label"], key=field["key"], options=field["options"])
-        elif field["type"] == "multiselect":
-            selected = st.multiselect(label=field["label"], key=field["key"], options=field["options"])
-            if "その他" in selected:
-                other_value = st.text_input(f"{field['label']}（その他）", key=f"{field['key']}_other")
-                if other_value:
-                    selected = [x for x in selected if x != "その他"] + [other_value]
-                st.session_state[field["key"]] = selected
-        elif field["type"] == "number":
-            st.number_input(
-                label=field["label"],
-                key=field["key"],
-                min_value=field.get("min", 0),
-                step=field.get("step", 1),
-                value=field.get("value", 0)
-            )
-        elif field["type"] == "date":
-            st.date_input(label=field["label"], key=field["key"])
-        elif field["type"] == "textarea":
-            st.text_area(label=field["label"], key=field["key"])
-
-def save_form_data():
-    current_section = sections[st.session_state.current_step]
-    for field in current_section["fields"]:
-        field_key = field["key"]
-        st.session_state.form_data[field_key] = st.session_state.get(field_key, "")
-
-def navigate_sections():
-    current_section = sections[st.session_state.current_step]
-    display_section(current_section)
-
-    col1, col2, col3 = st.columns([1,5,1])
-    with col1:
-        if st.button("戻る") and st.session_state.current_step > 0:
-            st.session_state.current_step -= 1
-            st.rerun()
-
-    with col3:
-        if st.session_state.current_step < len(sections) - 1:
-            if st.button("次へ"):
-                save_form_data()
-                st.session_state.current_step += 1
-                st.rerun()
-        else:
-            if st.button("生成"):
-                save_form_data()
-                if not st.session_state.form_data.get("company_name") or not st.session_state.form_data.get("location") or not st.session_state.form_data.get("required_skills"):
-                    st.error("⚠️ 必須項目（企業名、勤務地、必須スキル）を入力してください。")
-                else:
-                    info = generate_intern_info(
-                        company_name=st.session_state.form_data["company_name"],
-                        industry=st.session_state.form_data["industry"],
-                        format_type=st.session_state.form_data["format_type"],
-                        location=st.session_state.form_data["location"],
-                        nearest_station=st.session_state.form_data["nearest_station"],
-                        period=st.session_state.form_data["period"],
-                        position=st.session_state.form_data["position"],
-                        grade="、".join(st.session_state.form_data["grade"]),
-                        salary=st.session_state.form_data["salary"],
-                        transportation_fee=st.session_state.form_data["transportation_fee"],
-                        start_time=st.session_state.form_data["start_time"],
-                        end_time=st.session_state.form_data["end_time"],
-                        working_days=st.session_state.form_data["working_days"],
-                        working_hours=st.session_state.form_data["working_hours"],
-                        selection_process=st.session_state.form_data["selection_process"],
-                        deadline=st.session_state.form_data["deadline"],
-                        start_date=st.session_state.form_data["start_date"],
-                        number_of_recruits=st.session_state.form_data["number_of_recruits"],
-                        required_skills=st.session_state.form_data["required_skills"],
-                        preferred_skills=st.session_state.form_data["preferred_skills"]
-                    )
-                    
-                    st.success("🎉 インターン情報が生成されました！")
-                    st.code(info['説明'], language="text")
-                    
-                    # Notionに保存
-                    if save_to_notion(info):
-                        st.success("📝 Notionデータベースに保存されました！")
-                    
-                    # メール送信
-                    try:
-                        service = get_gmail_service()
-                        if service:
-                            message = MIMEText(info['説明'])
-                            message['to'] = os.getenv('GMAIL_ADDRESS')
-                            message['subject'] = f"【インターン情報】{st.session_state.form_data['company_name']}"
-                            
-                            raw_message = base64.urlsafe_b64encode(message.as_bytes()).decode()
-                            service.users().messages().send(
-                                userId='me',
-                                body={'raw': raw_message}
-                            ).execute()
-                            st.success("📧 メールが送信されました！")
-                        else:
-                            st.warning("⚠️ メール送信には認証が必要です。サイドバーから認証を行ってください。")
-                    except Exception as e:
-                        st.error(f"メールの送信に失敗しました: {str(e)}")
-
-navigate_sections()
-
-# サイドバーに使い方の説明を表示
-with st.sidebar:
-    st.markdown("""
-    ### 使い方
-    1. 各セクションの情報を入力
-    2. 「次へ」ボタンで次のセクションに進む
-    3. 最後のセクションで「生成」ボタンをクリック
-    4. 情報が自動的にNotionデータベースに保存されます
-    5. メールが自動的に送信されます
-
-    ### 注意事項
-    - * が付いている項目は必須です
-    - 「その他」を選択した場合は、詳細を入力できます
-    - メール送信にはGoogle認証が必要です
-    - Notionデータベースへの保存にはNotionトークンが必要です
-    """)
-
 # Gmail APIのスコープ
 SCOPES = ['https://www.googleapis.com/auth/gmail.send']
 
@@ -415,63 +266,7 @@ def send_email(to_email, subject, body):
     except Exception as e:
         return False, f"メールの送信に失敗しました: {str(e)}"
 
-def get_notion_client():
-    """Notionクライアントを取得する関数"""
-    try:
-        return Client(auth=os.getenv("NOTION_TOKEN"))
-    except Exception as e:
-        st.error(f"Notionクライアントの初期化に失敗しました: {str(e)}")
-        return None
-
-def save_to_notion(info):
-    """Notionデータベースに情報を保存する関数"""
-    try:
-        notion = get_notion_client()
-        if not notion:
-            return False
-
-        database_id = os.getenv("NOTION_DATABASE_ID")
-        
-        # 日付をISO形式に変換
-        deadline = info['応募締切日'].strftime("%Y-%m-%d") if info['応募締切日'] else None
-        start_date = info['インターン開始予定日'].strftime("%Y-%m-%d") if info['インターン開始予定日'] else None
-        
-        # 勤務時間の表示形式を設定
-        working_hours_display = f"{info['開始時間']}〜{info['終了時間']}" if info['開始時間'] != "フレックス制" and info['終了時間'] != "フレックス制" else "フレックス制"
-        
-        # データベースに新しいページを作成
-        notion.pages.create(
-            parent={"database_id": database_id},
-            properties={
-                "企業名": {"title": [{"text": {"content": info['企業名']}}]},
-                "業界": {"select": {"name": info['業界']}},
-                "形式": {"select": {"name": info['形式']}},
-                "勤務地": {"rich_text": [{"text": {"content": info['勤務地']}}]},
-                "最寄り駅": {"rich_text": [{"text": {"content": info['最寄り駅']}}]},
-                "インターン期間": {"rich_text": [{"text": {"content": info['インターン期間']}}]},
-                "インターン職種": {"rich_text": [{"text": {"content": info['インターン職種']}}]},
-                "募集対象": {"rich_text": [{"text": {"content": info['募集対象']}}]},
-                "報酬": {"number": info['報酬']},
-                "交通費": {"rich_text": [{"text": {"content": info['交通費']}}]},
-                "勤務時間": {"rich_text": [{"text": {"content": working_hours_display}}]},
-                "勤務日数": {"rich_text": [{"text": {"content": info['勤務日数']}}]},
-                "週の勤務時間": {"number": info['週の勤務時間']},
-                "選考フロー": {"rich_text": [{"text": {"content": info['選考フロー']}}]},
-                "応募締切日": {"date": {"start": deadline}} if deadline else None,
-                "インターン開始予定日": {"date": {"start": start_date}} if start_date else None,
-                "募集人数": {"number": info['募集人数']},
-                "必須スキル": {"rich_text": [{"text": {"content": info['必須スキル']}}]},
-                "歓迎スキル": {"rich_text": [{"text": {"content": info['歓迎スキル']}}]},
-                "ステータス": {"select": {"name": "新規"}},
-                "登録日": {"date": {"start": datetime.now().strftime("%Y-%m-%d")}}
-            }
-        )
-        return True
-    except Exception as e:
-        st.error(f"Notionへの保存に失敗しました: {str(e)}")
-        return False
-
-def generate_intern_info(company, industry, work_type, location, nearest_station, period, position, grade, 
+def generate_intern_info(company, industry, work_type, location, nearest_station, period, position, grade, salary, 
                         transportation_fee, start_time, end_time, working_days, working_time_per_week, skills, required_skills,
                         selection_process, deadline, start_date, capacity):
     intern_name = f"{company} {position}インターンシップ"
@@ -563,6 +358,115 @@ def generate_intern_info(company, industry, work_type, location, nearest_station
         "必須スキル": required_skills,
         "歓迎スキル": skills
     }
+
+def main():
+    # セッション状態の初期化
+    if 'info' not in st.session_state:
+        st.session_state.info = None
+    
+    # ヘッダー
+    st.markdown("""
+    <div style='text-align: center; margin-bottom: 30px;'>
+        <h1 style='color: #2c3e50;'>インターン情報自動作成ツール</h1>
+        <p style='color: #7f8c8d;'>必要な情報を入力して、インターン情報を作成しましょう</p>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # サイドバー
+    with st.sidebar:
+        st.markdown("""
+        <div style='text-align: center;'>
+            <h2 style='color: #2c3e50;'>About</h2>
+            <p style='color: #7f8c8d;'>このアプリはインターン情報を自動生成するツールです。</p>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        st.info("""
+        💡 **使い方**
+        1. 各項目を入力・選択
+        2. 「インターン情報を生成」ボタンをクリック
+        3. 生成された情報を確認
+        4. テキストを選択してコピー
+        """)
+    
+    # メインコンテンツ
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.markdown("### 基本情報")
+        company = st.text_input("企業名", placeholder="例: 株式会社〇〇")
+        industry = st.selectbox("業界", INDUSTRIES)
+        work_type = st.selectbox("形式", WORK_TYPES)
+        location = st.text_input("勤務地", placeholder="例: 東京都渋谷区道玄坂1-2-3 渋谷フクラス")
+        nearest_station = st.text_input("最寄り駅", placeholder="例: JR山手線・埼京線、東急東横線・田園都市線、京王井の頭線、地下鉄銀座線・半蔵門線の渋谷駅より徒歩1分")
+        period = st.selectbox("インターン期間", PERIODS)
+        position = st.selectbox("インターン職種", POSITIONS)
+        grade = st.multiselect("募集対象", GRADES)
+        if "その他" in grade:
+            other_grade = st.text_input("募集対象（その他）", placeholder="例: 社会人")
+            grade = [g for g in grade if g != "その他"] + [other_grade]
+        salary = st.number_input("報酬（時給）", min_value=0, step=100, value=1000)
+        transportation_fee = st.selectbox("交通費", TRANSPORTATION_FEES)
+        if transportation_fee == "その他":
+            transportation_fee = st.text_input("交通費（その他）", placeholder="例: 上限5,000円まで支給")
+    
+    with col2:
+        st.markdown("### 詳細情報")
+        col_start, col_end = st.columns(2)
+        with col_start:
+            start_time = st.selectbox("開始時間", TIMES)
+            if start_time == "その他":
+                start_time = st.text_input("開始時間（その他）", placeholder="例: フレックス制")
+        with col_end:
+            end_time = st.selectbox("終了時間", TIMES)
+            if end_time == "その他":
+                end_time = st.text_input("終了時間（その他）", placeholder="例: フレックス制")
+        working_days = st.selectbox("勤務日数", WORKING_DAYS)
+        if working_days == "その他":
+            working_days = st.text_input("勤務日数（その他）", placeholder="例: 月2回〜")
+        working_time_per_week = st.number_input("勤務時間（週）", min_value=0, step=1, value=15)
+        selection_process = st.selectbox("選考フロー", SELECTION_PROCESS)
+        deadline = st.date_input("応募締切日")
+        start_date = st.date_input("インターン開始予定日")
+        capacity = st.number_input("募集人数", min_value=1, step=1)
+        required_skills = st.text_area("必須スキル", placeholder="例:\n・Webアプリケーションの開発経験\n・コミュニケーション能力", height=100)
+        skills = st.text_area("歓迎スキル", placeholder="例:\n・Ruby on Railsを用いたWebアプリケーションの開発経験\n・WordPressのカスタマイズ経験\n・MySQLなどのRDBMSを用いたWebアプリケーション開発\n・GitHubを用いたチーム開発の経験", height=100)
+    
+    # 生成ボタン
+    if st.button("インターン情報を生成", type="primary"):
+        if company and location and required_skills:
+            # 募集対象を文字列に変換
+            grade_text = "、".join(grade)
+            
+            info = generate_intern_info(
+                company, industry, work_type, location, nearest_station, period, position, grade_text,
+                f"時給{salary}円", transportation_fee, start_time, end_time, working_days, f"週{working_time_per_week}時間",
+                skills, required_skills, selection_process, deadline.strftime("%Y-%m-%d"),
+                start_date.strftime("%Y-%m-%d"), str(capacity)
+            )
+            
+            # セッション状態に情報を保存
+            st.session_state.info = info
+            
+            st.success("🎉 インターン情報が生成されました！")
+            
+            # 結果を表示
+            st.markdown("### 生成されたインターン情報")
+            st.code(info['説明'], language="text")
+            
+            # 自動的にメールを送信
+            with st.spinner("メールを送信中..."):
+                success, message = send_email(
+                    st.secrets["TO_EMAIL"],
+                    f"{company} {position}インターンシップ募集要項",
+                    info['説明']
+                )
+                if success:
+                    st.success("メールが正常に送信されました！ 🚀")
+                else:
+                    st.error(f"メールの送信に失敗しました: {message}")
+        else:
+            st.error("⚠️ 必須項目（企業名、勤務地、必須スキル）を入力してください。")
 
 if __name__ == "__main__":
     main() 
