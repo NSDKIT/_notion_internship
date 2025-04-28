@@ -18,16 +18,17 @@ SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
 
 def get_google_sheets_service():
     """Google Sheets APIサービスを取得する関数"""
-    creds = None
-    # トークンファイルから認証情報を読み込む
-    if os.path.exists('token.pickle'):
-        with open('token.pickle', 'rb') as token:
-            creds = pickle.load(token)
+    # セッション状態から認証情報を取得
+    if 'google_creds' not in st.session_state:
+        st.session_state.google_creds = None
+    
+    creds = st.session_state.google_creds
     
     # 認証情報が無効な場合は更新
     if not creds or not creds.valid:
         if creds and creds.expired and creds.refresh_token:
             creds.refresh(Request())
+            st.session_state.google_creds = creds
         else:
             # Streamlit Secretsから認証情報を取得
             flow = InstalledAppFlow.from_client_config(
@@ -54,10 +55,7 @@ def get_google_sheets_service():
                 # 認証コードを使用してトークンを取得
                 flow.fetch_token(code=code)
                 creds = flow.credentials
-                
-                # 認証情報を保存
-                with open('token.pickle', 'wb') as token:
-                    pickle.dump(creds, token)
+                st.session_state.google_creds = creds
                 st.success("✅ 認証が完了しました！")
             else:
                 return None
