@@ -45,11 +45,10 @@ def get_google_sheets_service():
             # 認証URLを生成
             auth_url, _ = flow.authorization_url(prompt='consent')
             
-            # 認証が必要な場合は、サイドバーに表示
-            with st.sidebar:
-                st.warning("⚠️ Googleスプレッドシートへの保存機能を使用するには認証が必要です")
-                st.markdown(f"[認証リンク]({auth_url})")
-                code = st.text_input("認証コードを入力してください：")
+            # 認証が必要な場合は、メインコンテンツエリアに表示
+            st.warning("⚠️ Googleスプレッドシートへの保存機能を使用するには認証が必要です")
+            st.markdown(f"[認証リンク]({auth_url})")
+            code = st.text_input("認証コードを入力してください：")
             
             if code:
                 # 認証コードを使用してトークンを取得
@@ -59,7 +58,7 @@ def get_google_sheets_service():
                 # 認証情報を保存
                 with open('token.pickle', 'wb') as token:
                     pickle.dump(creds, token)
-                st.sidebar.success("✅ 認証が完了しました！")
+                st.success("✅ 認証が完了しました！")
             else:
                 return None
     
@@ -519,6 +518,9 @@ def main():
                         st.success(f"✅ {result}")
                     else:
                         st.error(f"⚠️ {result}")
+                        # 認証が必要な場合は、認証フローを再表示
+                        if "認証が必要" in result:
+                            get_google_sheets_service()
         else:
             st.error("⚠️ 必須項目（企業名、勤務地、必須スキル）を入力してください。")
 
