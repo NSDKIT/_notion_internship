@@ -79,7 +79,10 @@ st.markdown("""
 def get_google_sheets_service():
     """Google Sheets APIサービスを取得する関数"""
     try:
-        # Streamlit Secretsからサービスアカウントの認証情報を取得
+        # デバッグ情報を追加
+        print("利用可能なシークレットキー:", list(st.secrets.keys()))
+        
+        # サービスアカウント情報の取得方法を修正
         credentials = service_account.Credentials.from_service_account_info(
             st.secrets["gcp_service_account"],
             scopes=["https://www.googleapis.com/auth/spreadsheets"]
@@ -88,20 +91,35 @@ def get_google_sheets_service():
         return build('sheets', 'v4', credentials=credentials)
     except Exception as e:
         st.error(f"認証エラー: {str(e)}")
+        st.write(f"エラーの詳細: {type(e).__name__}, {str(e)}")
         return None
 
 def save_to_sheets(info):
     """Googleスプレッドシートに情報を保存する関数"""
     try:
+        # デバッグ情報
+        st.write("デバッグ情報:")
+        st.write(f"利用可能なシークレットキー: {list(st.secrets.keys())}")
+        
         service = get_google_sheets_service()
         if not service:
             return False, "Google認証に失敗しました"
             
         # スプレッドシートIDを取得
-        spreadsheet_id = st.secrets["SPREADSHEET_ID"]
+        try:
+            spreadsheet_id = st.secrets["SPREADSHEET_ID"]
+            st.write(f"SPREADSHEET_ID: {spreadsheet_id[:5]}...{spreadsheet_id[-3:]}")
+        except Exception as e:
+            st.error(f"SPREADSHEET_IDの取得に失敗: {str(e)}")
+            return False, f"SPREADSHEET_IDの取得に失敗: {str(e)}"
         
         # シート名を取得
-        sheet_name = st.secrets.get("SHEET_NAME", "Sheet1")
+        try:
+            sheet_name = st.secrets.get("SHEET_NAME", "Sheet1")
+            st.write(f"SHEET_NAME: {sheet_name}")
+        except Exception as e:
+            st.error(f"SHEET_NAMEの取得に失敗: {str(e)}")
+            return False, f"SHEET_NAMEの取得に失敗: {str(e)}"
         
         # ヘッダー行を準備
         headers = [
