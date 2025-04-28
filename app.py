@@ -409,6 +409,9 @@ def main():
                 start_date.strftime("%Y-%m-%d"), str(capacity), skills
             )
             
+            # 生成された情報をセッション状態に保存
+            st.session_state.info = info
+            
             st.success("🎉 インターン情報が生成されました！")
             
             # Notionに投稿するかどうかを選択
@@ -439,6 +442,17 @@ def main():
         else:
             st.error("⚠️ 必須項目（企業名、勤務地、必要なスキル・経験）を入力してください。")
             st.write("デバッグ: 必須項目が入力されていません")
+    
+    # セッション状態に保存された情報がある場合は表示
+    if st.session_state.get('info'):
+        st.markdown("### 保存されたインターン情報")
+        for k, v in st.session_state.info.items():
+            st.markdown(f"""
+            <div style='background-color: white; padding: 15px; border-radius: 10px; margin-bottom: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);'>
+                <strong style='color: #2c3e50;'>{k}:</strong>
+                <p style='color: #34495e; margin-top: 5px;'>{v}</p>
+            </div>
+            """, unsafe_allow_html=True)
 
 if __name__ == "__main__":
     main() 
