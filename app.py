@@ -2,7 +2,13 @@ import streamlit as st
 from datetime import datetime, time
 import os
 from dotenv import load_dotenv
-from email_config import send_email
+from google_auth_oauthlib.flow import InstalledAppFlow
+from google.auth.transport.requests import Request
+from google.oauth2.credentials import Credentials
+from googleapiclient.discovery import build
+import pickle
+import base64
+from email.mime.text import MIMEText
 
 # .envファイルから環境変数を読み込む
 load_dotenv()
@@ -189,6 +195,49 @@ SELECTION_PROCESS = [
     "書類選考 → グループワーク → 面接",
     "その他"
 ]
+
+# Gmail APIのスコープ
+SCOPES = ['https://www.googleapis.com/auth/gmail.send']
+
+def get_gmail_service():
+    """Gmail APIサービスを取得する関数"""
+    creds = None
+    # トークンファイルから認証情報を読み込む
+    if os.path.exists('token.pickle'):
+        with open('token.pickle', 'rb') as token:
+            creds = pickle.load(token)
+    
+    # 認証情報が無効な場合は更新
+    if not creds or not creds.valid:
+        if creds and creds.expired and creds.refresh_token:
+            creds.refresh(Request())
+        else:
+            flow = InstalledAppFlow.from_client_secrets_file(
+                'credentials.json', SCOPES)
+            creds = flow.run_local_server(port=0)
+        # 認証情報を保存
+        with open('token.pickle', 'wb') as token:
+            pickle.dump(creds, token)
+    
+    return build('gmail', 'v1', credentials=creds)
+
+def send_email(to_email, subject, body):
+    """メールを送信する関数"""
+    try:
+        service = get_gmail_service()
+        message = MIMEText(body)
+        message['to'] = to_email
+        message['subject'] = subject
+        raw_message = base64.urlsafe_b64encode(message.as_bytes()).decode('utf-8')
+        
+        service.users().messages().send(
+            userId='me',
+            body={'raw': raw_message}
+        ).execute()
+        
+        return True, "メールが正常に送信されました"
+    except Exception as e:
+        return False, f"メールの送信に失敗しました: {str(e)}"
 
 def generate_intern_info(company, industry, work_type, location, nearest_station, period, position, grade, salary, 
                         transportation_fee, start_time, end_time, working_days, working_time_per_week, skills, required_skills,
