@@ -328,15 +328,23 @@ def main():
         grade = st.selectbox("募集対象", GRADES)
         salary = st.number_input("報酬（時給）", min_value=0, step=100, value=1000)
         transportation_fee = st.selectbox("交通費", TRANSPORTATION_FEES)
+        if transportation_fee == "その他":
+            transportation_fee = st.text_input("交通費（その他）", placeholder="例: 上限5,000円まで支給")
     
     with col2:
         st.markdown("### 詳細情報")
         col_start, col_end = st.columns(2)
         with col_start:
             start_time = st.selectbox("開始時間", TIMES)
+            if start_time == "その他":
+                start_time = st.text_input("開始時間（その他）", placeholder="例: フレックス制")
         with col_end:
             end_time = st.selectbox("終了時間", TIMES)
+            if end_time == "その他":
+                end_time = st.text_input("終了時間（その他）", placeholder="例: フレックス制")
         working_days = st.selectbox("勤務日数", WORKING_DAYS)
+        if working_days == "その他":
+            working_days = st.text_input("勤務日数（その他）", placeholder="例: 月2回〜")
         working_time_per_week = st.number_input("勤務時間（週）", min_value=0, step=1, value=15)
         selection_process = st.selectbox("選考フロー", SELECTION_PROCESS)
         deadline = st.date_input("応募締切日")
