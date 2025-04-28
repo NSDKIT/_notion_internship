@@ -15,7 +15,15 @@ from notion_client import Client
 load_dotenv()
 
 # Notionクライアントの初期化
-notion = Client(auth=st.secrets["NOTION_API_KEY"])
+try:
+    notion = Client(auth=st.secrets["NOTION_API_KEY"])
+    DATABASE_ID = st.secrets["DATABASE_ID"]
+    NOTION_CONFIGURED = True
+except Exception as e:
+    st.error("⚠️ Notionの設定が正しくありません。管理者に連絡してください。")
+    NOTION_CONFIGURED = False
+    notion = None
+    DATABASE_ID = None
 
 # ページ設定
 st.set_page_config(
@@ -365,6 +373,9 @@ def generate_intern_info(company, industry, work_type, location, nearest_station
 
 def create_notion_page(info):
     """Notionにページを作成する関数"""
+    if not NOTION_CONFIGURED:
+        return False, "Notionの設定が正しくありません"
+        
     try:
         # ページのプロパティを設定
         properties = {
@@ -403,7 +414,7 @@ def create_notion_page(info):
 
         # Notionにページを作成
         new_page = notion.pages.create(
-            parent={"database_id": st.secrets["DATABASE_ID"]},
+            parent={"database_id": DATABASE_ID},
             properties=properties,
             children=children
         )
@@ -441,16 +452,7 @@ def main():
         3. 生成された情報を確認
         4. Notionに保存（オプション）
         """)
-        
-        # Notion設定
-        st.markdown("### Notion設定")
-        notion_api_key = st.text_input("Notion API Key", type="password", value=st.secrets.get("NOTION_API_KEY", ""))
-        database_id = st.text_input("Database ID", value=st.secrets.get("DATABASE_ID", ""))
-        
-        if notion_api_key and database_id:
-            st.secrets["NOTION_API_KEY"] = notion_api_key
-            st.secrets["DATABASE_ID"] = database_id
-    
+
     # メインコンテンツ
     col1, col2 = st.columns(2)
     
@@ -517,13 +519,16 @@ def main():
             st.code(info['説明'], language="text")
             
             # Notionに保存するかどうかのチェックボックス
-            if st.checkbox("Notionに保存する"):
-                with st.spinner("Notionに保存中..."):
-                    success, result = create_notion_page(info)
-                    if success:
-                        st.success(f"✅ Notionに保存しました！\n[ページを開く]({result})")
-                    else:
-                        st.error(f"⚠️ Notionへの保存に失敗しました: {result}")
+            if NOTION_CONFIGURED:
+                if st.checkbox("Notionに保存する"):
+                    with st.spinner("Notionに保存中..."):
+                        success, result = create_notion_page(info)
+                        if success:
+                            st.success(f"✅ Notionに保存しました！\n[ページを開く]({result})")
+                        else:
+                            st.error(f"⚠️ Notionへの保存に失敗しました: {result}")
+            else:
+                st.warning("⚠️ Notionへの保存機能は現在利用できません。")
         else:
             st.error("⚠️ 必須項目（企業名、勤務地、必須スキル）を入力してください。")
 
