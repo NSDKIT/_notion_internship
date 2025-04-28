@@ -421,6 +421,10 @@ def main():
             st.write(f"チェックボックスのキー: notion_checkbox")
             st.write(f"セッション状態: {st.session_state.get('notion_checkbox')}")
             
+            # チェックボックスの状態をセッション状態に保存
+            st.session_state.notion_checkbox = post_to_notion
+            st.write(f"デバッグ: セッション状態にチェックボックスの状態を保存しました: {st.session_state.notion_checkbox}")
+            
             if post_to_notion:
                 st.write("デバッグ: Notionに投稿するが選択されました")
                 st.write(f"デバッグ: infoの内容: {info}")
@@ -429,6 +433,8 @@ def main():
                     st.success(f"✅ Notionに投稿しました！ [ページを開く]({page_url})")
                 else:
                     st.error("⚠️ Notionページの作成に失敗しました")
+            else:
+                st.write("デバッグ: Notionに投稿するが選択されていません")
             
             # 結果を表示
             st.markdown("### 生成されたインターン情報")
