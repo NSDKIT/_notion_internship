@@ -150,22 +150,60 @@ SELECTION_PROCESS = [
 
 def generate_intern_info(company, industry, location, period, position, grade, salary, 
                         selection_process, deadline, start_date, capacity, skills):
-    intern_name = f"{company} {position}インターンシップ ({period})"
+    intern_name = f"{company} {position}インターンシップ"
     description = f"""
-{company}（業界: {industry}）が{location}で開催する{period}の{position}インターンシップです。
-募集対象: {grade}
-報酬: {salary}
-募集人数: {capacity}名
-応募締切: {deadline}
-開始予定日: {start_date}
+【募集要項】
+募集職種
+{position}
+
+雇用形態
+アルバイト
+
+給与
+{salary}
+
+勤務地
+{location}
+
+勤務可能時間
+09:30〜20:00
+
+勤務日数
+週2日〜
+
+勤務時間
+週15時間〜
+
+勤務期間
+{period}
+
+【応募条件】
+※注意事項※
+この度は弊社長期インターンにご関心をお寄せいただき、誠にありがとうございます。
+ご応募に際し、以下の点についてご確認をお願いいたします。
+
+①過去に弊社長期インターンへご応募いただいた方は、再応募をご遠慮いただいております。
+②複数ポジションへの同時応募はできませんので、希望するポジションを一つ選んでご応募ください。
+
+【勤務時間】
+・期間：{start_date}〜{period}以上勤務できる方
+・稼働時間：15時間/週以上勤務できる方
+・勤務時間：平日9:30〜20:00内（土日祝日を除く）
+
+【応募条件】
+・{grade}大歓迎！
+
+【必須スキル】
+{skills}
 
 【選考フロー】
 {selection_process}
 
-【必要なスキル・経験】
-{skills}
+【応募締切】
+{deadline}
 
-実務体験や社員交流を通じて、{industry}業界の理解を深めることができます。
+【募集人数】
+{capacity}名
 """
     return {
         "インターン名": intern_name,
@@ -217,19 +255,19 @@ def main():
         st.markdown("### 基本情報")
         company = st.text_input("企業名", placeholder="例: 株式会社〇〇")
         industry = st.selectbox("業界", INDUSTRIES)
-        location = st.text_input("勤務地", placeholder="例: 東京都渋谷区")
+        location = st.text_input("勤務地", placeholder="例: 東京都渋谷区道玄坂1-2-3 渋谷フクラス")
         period = st.selectbox("インターン期間", PERIODS)
         position = st.selectbox("インターン職種", POSITIONS)
         grade = st.selectbox("募集対象", GRADES)
     
     with col2:
         st.markdown("### 詳細情報")
-        salary = st.selectbox("報酬", SALARIES)
+        salary = st.text_input("報酬", placeholder="例: 時給1,700円〜（試用期間中は1,200円となります）")
         selection_process = st.selectbox("選考フロー", SELECTION_PROCESS)
         deadline = st.date_input("応募締切日")
         start_date = st.date_input("インターン開始予定日")
         capacity = st.number_input("募集人数", min_value=1, step=1)
-        skills = st.text_area("必要なスキル・経験", placeholder="例:\n- Python\n- コミュニケーション能力\n- チームワーク", height=100)
+        skills = st.text_area("必要なスキル・経験", placeholder="例:\n【必須スキル】\n・Webアプリケーションの開発経験\n\n【歓迎スキル】\n・Ruby on Railsを用いたWebアプリケーションの開発経験\n・WordPressのカスタマイズ経験\n・MySQLなどのRDBMSを用いたWebアプリケーション開発\n・GitHubを用いたチーム開発の経験", height=200)
     
     # 生成ボタン
     if st.button("インターン情報を生成"):
@@ -244,41 +282,16 @@ def main():
             
             # 結果を表示
             st.markdown("### 生成されたインターン情報")
-            for k, v in info.items():
-                st.markdown(f"""
-                <div style='background-color: white; padding: 15px; border-radius: 10px; margin-bottom: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);'>
-                    <strong style='color: #2c3e50;'>{k}:</strong>
-                    <p style='color: #34495e; margin-top: 5px;'>{v}</p>
-                </div>
-                """, unsafe_allow_html=True)
-            
-            # コピー用のテキストを表示
-            copy_text = f"""【{info['インターン名']}】
-
-{info['説明']}
-
-【詳細情報】
-・企業名: {info['企業名']}
-・業界: {info['業界']}
-・勤務地: {info['勤務地']}
-・期間: {info['期間']}
-・職種: {info['職種']}
-・募集対象: {info['募集対象']}
-・報酬: {info['報酬']}
-・選考フロー: {info['選考フロー']}
-・応募締切: {info['応募締切']}
-・開始予定日: {info['開始予定日']}
-・募集人数: {info['募集人数']}名
-・必要なスキル・経験:
-{info['必要なスキル・経験']}"""
-            
-            st.markdown("### コピー用テキスト")
-            st.code(copy_text, language="text")
+            st.markdown(f"""
+            <div style='background-color: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);'>
+                <pre style='white-space: pre-wrap;'>{info['説明']}</pre>
+            </div>
+            """, unsafe_allow_html=True)
             
             # コピーボタン
             if st.button("全てをコピー"):
                 try:
-                    pyperclip.copy(copy_text)
+                    pyperclip.copy(info['説明'])
                     st.success("✅ クリップボードにコピーしました！")
                 except Exception as e:
                     st.warning("⚠️ 自動コピーに失敗しました。上記のテキストを手動でコピーしてください。")
