@@ -391,6 +391,10 @@ def main():
     # セッション状態の初期化
     if 'info' not in st.session_state:
         st.session_state.info = None
+    if 'info_generated' not in st.session_state:
+        st.session_state.info_generated = False
+    if 'save_option' not in st.session_state:
+        st.session_state.save_option = "保存しない"
     
     # ヘッダー
     st.markdown("""
@@ -471,34 +475,42 @@ def main():
             
             # セッション状態に情報を保存
             st.session_state.info = info
+            st.session_state.info_generated = True
             
             st.success("🎉 インターン情報が生成されました！")
-            
-            # 結果を表示
-            st.markdown("### 生成されたインターン情報")
-            st.code(info['説明'], language="text")
-            
-            # Googleスプレッドシートへの保存オプション
-            st.markdown("### Googleスプレッドシートへの保存")
-            save_option = st.radio(
-                "保存オプション",
-                ["保存しない", "Googleスプレッドシートに保存する"]
-            )
-            
-            if save_option == "Googleスプレッドシートに保存する":
-                if st.button("保存を実行する", type="primary"):
-                    with st.spinner("スプレッドシートに保存中..."):
-                        try:
-                            success, result = save_to_sheets(info)
-                            if success:
-                                st.success(f"✅ {result}")
-                            else:
-                                st.error(f"⚠️ {result}")
-                        except Exception as e:
-                            st.error(f"⚠️ エラーが発生しました: {str(e)}")
-                            st.write(f"エラー詳細: {str(e)}")
         else:
             st.error("⚠️ 必須項目（企業名、勤務地、必須スキル）を入力してください。")
+    
+    # 生成された情報がある場合に表示
+    if st.session_state.info_generated and st.session_state.info:
+        # 結果を表示
+        st.markdown("### 生成されたインターン情報")
+        st.code(st.session_state.info['説明'], language="text")
+        
+        # Googleスプレッドシートへの保存オプション
+        st.markdown("### Googleスプレッドシートへの保存")
+        
+        # ラジオボタンの選択状態をセッションに保存
+        st.session_state.save_option = st.radio(
+            "保存オプション",
+            ["保存しない", "Googleスプレッドシートに保存する"],
+            key="save_option_radio"
+        )
+        
+        # 保存オプションが選択された場合、保存ボタンを表示
+        if st.session_state.save_option == "Googleスプレッドシートに保存する":
+            save_button = st.button("保存を実行する", key="save_button")
+            if save_button:
+                with st.spinner("スプレッドシートに保存中..."):
+                    try:
+                        success, result = save_to_sheets(st.session_state.info)
+                        if success:
+                            st.success(f"✅ {result}")
+                        else:
+                            st.error(f"⚠️ {result}")
+                    except Exception as e:
+                        st.error(f"⚠️ エラーが発生しました: {str(e)}")
+                        st.write(f"エラー詳細: {str(e)}")
 
 if __name__ == "__main__":
     main()
