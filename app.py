@@ -97,19 +97,6 @@ def get_google_sheets_service():
 def save_to_sheets(info):
     """Googleスプレッドシートに情報を保存する関数"""
     try:
-        # デバッグ情報
-        st.write("デバッグ情報:")
-        st.write(f"利用可能なシークレットキー: {list(st.secrets.keys())}")
-        
-        if "gcp_service_account" in st.secrets:
-            st.write("gcp_service_accountの中のキー:")
-            for key in st.secrets["gcp_service_account"]:
-                # プライベートキーなどの機密情報は表示しない
-                if key == "private_key":
-                    st.write(f"- private_key: (存在します)")
-                else:
-                    st.write(f"- {key}")
-        
         # TOMLファイルの階層構造の問題を回避する代替コード
         try:
             # 直接スプレッドシートIDを取得してみる
