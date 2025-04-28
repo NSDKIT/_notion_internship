@@ -509,16 +509,27 @@ def main():
             st.code(info['説明'], language="text")
             
             # Googleスプレッドシートに保存するかどうかのチェックボックス
-            if st.checkbox("Googleスプレッドシートに保存する"):
+            save_to_sheets = st.checkbox("Googleスプレッドシートに保存する")
+            st.write("デバッグ: チェックボックスの状態 =", save_to_sheets)
+            
+            if save_to_sheets:
+                st.write("デバッグ: 保存処理を開始")
                 with st.spinner("スプレッドシートに保存中..."):
-                    success, result = save_to_sheets(info)
-                    if success:
-                        st.success(f"✅ {result}")
-                    else:
-                        st.error(f"⚠️ {result}")
-                        # 認証が必要な場合は、認証フローを再表示
-                        if "認証が必要" in result:
-                            get_google_sheets_service()
+                    try:
+                        st.write("デバッグ: save_to_sheets関数を呼び出し")
+                        success, result = save_to_sheets(info)
+                        st.write("デバッグ: 保存結果 =", success, result)
+                        if success:
+                            st.success(f"✅ {result}")
+                        else:
+                            st.error(f"⚠️ {result}")
+                            # 認証が必要な場合は、認証フローを再表示
+                            if "認証が必要" in result:
+                                st.write("デバッグ: 認証フローを開始")
+                                get_google_sheets_service()
+                    except Exception as e:
+                        st.error(f"⚠️ エラーが発生しました: {str(e)}")
+                        st.write("デバッグ: エラーの詳細 =", str(e))
         else:
             st.error("⚠️ 必須項目（企業名、勤務地、必須スキル）を入力してください。")
 
