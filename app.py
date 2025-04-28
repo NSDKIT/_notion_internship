@@ -509,8 +509,11 @@ def main():
             st.code(info['説明'], language="text")
             
             # Googleスプレッドシートに保存するかどうかのチェックボックス
-            save_to_sheets = st.checkbox("Googleスプレッドシートに保存する")
-            st.write("デバッグ: チェックボックスの状態 =", save_to_sheets)
+            if 'save_to_sheets' not in st.session_state:
+                st.session_state.save_to_sheets = False
+            
+            save_to_sheets = st.checkbox("Googleスプレッドシートに保存する", value=st.session_state.save_to_sheets)
+            st.session_state.save_to_sheets = save_to_sheets
             
             if save_to_sheets:
                 st.write("デバッグ: 保存処理を開始")
