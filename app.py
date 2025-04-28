@@ -311,6 +311,8 @@ def create_notion_page(info):
         return None
 
 def main():
+    st.write("デバッグ: main関数が開始されました")
+    
     # ヘッダー
     st.markdown("""
     <div style='text-align: center; margin-bottom: 30px;'>
@@ -358,7 +360,9 @@ def main():
     
     # 生成ボタン
     if st.button("インターン情報を生成", key="generate_button"):
+        st.write("デバッグ: 生成ボタンがクリックされました")
         if company and location and skills:
+            st.write("デバッグ: 必須項目が入力されています")
             info = generate_intern_info(
                 company, industry, location, period, position, grade,
                 salary, selection_process, deadline.strftime("%Y-%m-%d"),
@@ -395,6 +399,7 @@ def main():
                 """, unsafe_allow_html=True)
         else:
             st.error("⚠️ 必須項目（企業名、勤務地、必要なスキル・経験）を入力してください。")
+            st.write("デバッグ: 必須項目が入力されていません")
 
 if __name__ == "__main__":
     main() 
