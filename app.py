@@ -139,133 +139,126 @@ def save_to_sheets(info):
             st.write(f"使用するスプレッドシートID: {spreadsheet_id[:5]}...{spreadsheet_id[-5:]}")
             st.write(f"使用するシート名: {sheet_name}")
                     
-            # 以下から既存のコードを続ける
             service = get_google_sheets_service()
             if not service:
                 return False, "Google認証に失敗しました"
-            
-            # 以下略...
-        
-        service = get_google_sheets_service()
-        if not service:
-            return False, "Google認証に失敗しました"
-            
-        # スプレッドシートIDを取得
-        try:
-            spreadsheet_id = st.secrets["SPREADSHEET_ID"]
-            st.write(f"SPREADSHEET_ID: {spreadsheet_id[:5]}...{spreadsheet_id[-3:]}")
-        except Exception as e:
-            st.error(f"SPREADSHEET_IDの取得に失敗: {str(e)}")
-            return False, f"SPREADSHEET_IDの取得に失敗: {str(e)}"
-        
-        # シート名を取得
-        try:
-            sheet_name = st.secrets.get("SHEET_NAME", "Sheet1")
-            st.write(f"SHEET_NAME: {sheet_name}")
-        except Exception as e:
-            st.error(f"SHEET_NAMEの取得に失敗: {str(e)}")
-            return False, f"SHEET_NAMEの取得に失敗: {str(e)}"
-        
-        # ヘッダー行を準備
-        headers = [
-            "インターン名", "企業名", "業界", "形式", "勤務地", "最寄り駅",
-            "期間", "職種", "募集対象", "報酬", "交通費", "勤務可能時間",
-            "勤務日数", "勤務時間", "選考フロー", "応募締切", "開始予定日",
-            "募集人数", "必須スキル", "歓迎スキル", "説明"
-        ]
-        
-        # データ行を準備
-        values = [
-            info["インターン名"], info["企業名"], info["業界"], info["形式"],
-            info["勤務地"], info["最寄り駅"], info["期間"], info["職種"],
-            info["募集対象"], info["報酬"], info["交通費"], info["勤務可能時間"],
-            info["勤務日数"], info["勤務時間"], info["選考フロー"],
-            info["応募締切"], info["開始予定日"], info["募集人数"],
-            info["必須スキル"], info["歓迎スキル"], info["説明"]
-        ]
-        
-        # シートが存在するか確認
-        try:
-            # シート情報を取得
-            sheet_metadata = service.spreadsheets().get(spreadsheetId=spreadsheet_id).execute()
-            sheets = sheet_metadata.get('sheets', '')
-            
-            # シート名リストを取得
-            sheet_names = [sheet['properties']['title'] for sheet in sheets]
-            
-            # シートが存在しない場合は作成
-            if sheet_name not in sheet_names:
-                service.spreadsheets().batchUpdate(
-                    spreadsheetId=spreadsheet_id,
-                    body={
-                        'requests': [{
-                            'addSheet': {
-                                'properties': {
-                                    'title': sheet_name
-                                }
-                            }
-                        }]
-                    }
-                ).execute()
                 
-                # ヘッダー行を書き込む
-                service.spreadsheets().values().update(
-                    spreadsheetId=spreadsheet_id,
-                    range=f"{sheet_name}!A1:U1",
-                    valueInputOption='RAW',
-                    body={'values': [headers]}
-                ).execute()
+            # スプレッドシートIDを取得
+            try:
+                spreadsheet_id = st.secrets["SPREADSHEET_ID"]
+                st.write(f"SPREADSHEET_ID: {spreadsheet_id[:5]}...{spreadsheet_id[-3:]}")
+            except Exception as e:
+                st.error(f"SPREADSHEET_IDの取得に失敗: {str(e)}")
+                return False, f"SPREADSHEET_IDの取得に失敗: {str(e)}"
+            
+            # シート名を取得
+            try:
+                sheet_name = st.secrets.get("SHEET_NAME", "Sheet1")
+                st.write(f"SHEET_NAME: {sheet_name}")
+            except Exception as e:
+                st.error(f"SHEET_NAMEの取得に失敗: {str(e)}")
+                return False, f"SHEET_NAMEの取得に失敗: {str(e)}"
+            
+            # ヘッダー行を準備
+            headers = [
+                "インターン名", "企業名", "業界", "形式", "勤務地", "最寄り駅",
+                "期間", "職種", "募集対象", "報酬", "交通費", "勤務可能時間",
+                "勤務日数", "勤務時間", "選考フロー", "応募締切", "開始予定日",
+                "募集人数", "必須スキル", "歓迎スキル", "説明"
+            ]
+            
+            # データ行を準備
+            values = [
+                info["インターン名"], info["企業名"], info["業界"], info["形式"],
+                info["勤務地"], info["最寄り駅"], info["期間"], info["職種"],
+                info["募集対象"], info["報酬"], info["交通費"], info["勤務可能時間"],
+                info["勤務日数"], info["勤務時間"], info["選考フロー"],
+                info["応募締切"], info["開始予定日"], info["募集人数"],
+                info["必須スキル"], info["歓迎スキル"], info["説明"]
+            ]
+            
+            # シートが存在するか確認
+            try:
+                # シート情報を取得
+                sheet_metadata = service.spreadsheets().get(spreadsheetId=spreadsheet_id).execute()
+                sheets = sheet_metadata.get('sheets', '')
+                
+                # シート名リストを取得
+                sheet_names = [sheet['properties']['title'] for sheet in sheets]
+                
+                # シートが存在しない場合は作成
+                if sheet_name not in sheet_names:
+                    service.spreadsheets().batchUpdate(
+                        spreadsheetId=spreadsheet_id,
+                        body={
+                            'requests': [{
+                                'addSheet': {
+                                    'properties': {
+                                        'title': sheet_name
+                                    }
+                                }
+                            }]
+                        }
+                    ).execute()
+                    
+                    # ヘッダー行を書き込む
+                    service.spreadsheets().values().update(
+                        spreadsheetId=spreadsheet_id,
+                        range=f"{sheet_name}!A1:U1",
+                        valueInputOption='RAW',
+                        body={'values': [headers]}
+                    ).execute()
+            except Exception as e:
+                st.error(f"シート確認中にエラーが発生しました: {str(e)}")
+                return False, f"シート確認中にエラーが発生しました: {str(e)}"
+            
+            # 既存のデータを取得
+            result = service.spreadsheets().values().get(
+                spreadsheetId=spreadsheet_id,
+                range=f"{sheet_name}!A:U"
+            ).execute()
+            
+            # 行番号を計算（ヘッダー行を除く）
+            rows = result.get('values', [])
+            next_row = len(rows) + 1
+            
+            # 新しいデータを追加
+            service.spreadsheets().values().update(
+                spreadsheetId=spreadsheet_id,
+                range=f"{sheet_name}!A{next_row}:U{next_row}",
+                valueInputOption='RAW',
+                body={'values': [values]}
+            ).execute()
+            
+            return True, "スプレッドシートに保存しました"
         except Exception as e:
-            st.error(f"シート確認中にエラーが発生しました: {str(e)}")
-            return False, f"シート確認中にエラーが発生しました: {str(e)}"
-        
-        # 既存のデータを取得
-        result = service.spreadsheets().values().get(
-            spreadsheetId=spreadsheet_id,
-            range=f"{sheet_name}!A:U"
-        ).execute()
-        
-        # 行番号を計算（ヘッダー行を除く）
-        rows = result.get('values', [])
-        next_row = len(rows) + 1
-        
-        # 新しいデータを追加
-        service.spreadsheets().values().update(
-            spreadsheetId=spreadsheet_id,
-            range=f"{sheet_name}!A{next_row}:U{next_row}",
-            valueInputOption='RAW',
-            body={'values': [values]}
-        ).execute()
-        
-        return True, "スプレッドシートに保存しました"
-    except Exception as e:
-        st.error(f"エラーの詳細: {str(e)}")
-        return False, f"スプレッドシートへの保存に失敗しました: {str(e)}"
-
-# 選択肢の定義
-INDUSTRIES = [
-    "IT・テクノロジー",
-    "金融・保険",
-    "製造・メーカー",
-    "商社・流通",
-    "サービス",
-    "広告・マーケティング",
-    "コンサルティング",
-    "メディア・エンターテインメント",
-    "小売・流通",
-    "不動産・建設",
-    "医療・ヘルスケア",
-    "教育",
-    "エネルギー・資源",
-    "運輸・物流",
-    "その他"
-]
-
-WORK_TYPES = [
-    "対面",
-    "オンライン",
-    "ハイブリッド"
-]
+            st.error(f"エラーの詳細: {str(e)}")
+            return False, f"スプレッドシートへの保存に失敗しました: {str(e)}"
+    
+    # 選択肢の定義
+    INDUSTRIES = [
+        "IT・テクノロジー",
+        "金融・保険",
+        "製造・メーカー",
+        "商社・流通",
+        "サービス",
+        "広告・マーケティング",
+        "コンサルティング",
+        "メディア・エンターテインメント",
+        "小売・流通",
+        "不動産・建設",
+        "医療・ヘルスケア",
+        "教育",
+        "エネルギー・資源",
+        "運輸・物流",
+        "その他"
+    ]
+    
+    WORK_TYPES = [
+        "対面",
+        "オンライン",
+        "ハイブリッド"
+    ]
 
 # 24時間（30分単位）の時間リストを生成
 def generate_time_list():
