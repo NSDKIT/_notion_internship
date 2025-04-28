@@ -478,18 +478,25 @@ def main():
             st.markdown("### 生成されたインターン情報")
             st.code(info['説明'], language="text")
             
-            # Googleスプレッドシートに保存するかどうかのチェックボックス
-            save_to_sheets_check = st.checkbox("Googleスプレッドシートに保存する")
-
-            if save_to_sheets_check:
-                # 別のボタンを追加して明示的に保存処理を実行
-                if st.button("保存を実行する"):
+            # Googleスプレッドシートへの保存オプション
+            st.markdown("### Googleスプレッドシートへの保存")
+            save_option = st.radio(
+                "保存オプション",
+                ["保存しない", "Googleスプレッドシートに保存する"]
+            )
+            
+            if save_option == "Googleスプレッドシートに保存する":
+                if st.button("保存を実行する", type="primary"):
                     with st.spinner("スプレッドシートに保存中..."):
-                        success, result = save_to_sheets(info)
-                        if success:
-                            st.success(f"✅ {result}")
-                        else:
-                            st.error(f"⚠️ {result}")
+                        try:
+                            success, result = save_to_sheets(info)
+                            if success:
+                                st.success(f"✅ {result}")
+                            else:
+                                st.error(f"⚠️ {result}")
+                        except Exception as e:
+                            st.error(f"⚠️ エラーが発生しました: {str(e)}")
+                            st.write(f"エラー詳細: {str(e)}")
         else:
             st.error("⚠️ 必須項目（企業名、勤務地、必須スキル）を入力してください。")
 
