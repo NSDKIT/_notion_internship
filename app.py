@@ -215,6 +215,8 @@ def generate_intern_info(company, industry, location, period, position, grade, s
 def create_notion_page(info):
     """Notionに新しいページを作成する"""
     try:
+        st.write("デバッグ: create_notion_page関数が呼び出されました")
+        
         if not NOTION_TOKEN or not NOTION_DATABASE_ID:
             st.error("⚠️ Notionの設定が完了していません。Streamlit SecretsにNOTION_TOKENとNOTION_DATABASE_IDを設定してください。")
             return None
@@ -223,6 +225,8 @@ def create_notion_page(info):
             st.error("⚠️ Notionクライアントの初期化に失敗しました。")
             return None
             
+        st.write("デバッグ: シークレットとクライアントのチェックを通過しました")
+        
         # データベースIDをシークレットから取得
         database_id = NOTION_DATABASE_ID
         
@@ -240,6 +244,8 @@ def create_notion_page(info):
             "開始予定日": {"date": {"start": info["開始予定日"]}},
             "募集人数": {"number": int(info["募集人数"])}
         }
+        
+        st.write("デバッグ: プロパティの設定が完了しました")
         
         # ページのコンテンツを設定
         children = [
@@ -287,16 +293,21 @@ def create_notion_page(info):
             }
         ]
         
+        st.write("デバッグ: コンテンツの設定が完了しました")
+        
         # ページを作成
+        st.write("デバッグ: ページの作成を開始します")
         new_page = notion.pages.create(
             parent={"database_id": database_id},
             properties=properties,
             children=children
         )
         
+        st.write("デバッグ: ページの作成が完了しました")
         return new_page["url"]
     except Exception as e:
         st.error(f"Notionへの投稿に失敗しました: {str(e)}")
+        st.write(f"デバッグ: エラーの詳細: {str(e)}")
         return None
 
 def main():
