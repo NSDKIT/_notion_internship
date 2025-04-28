@@ -4,11 +4,21 @@ from notion_client import Client
 import os
 from dotenv import load_dotenv
 
-# .envファイルから環境変数を読み込む
-load_dotenv()
+# ローカル開発環境用の設定
+if os.path.exists(".env"):
+    load_dotenv()
+    NOTION_TOKEN = os.getenv("NOTION_TOKEN")
+    NOTION_DATABASE_ID = os.getenv("NOTION_DATABASE_ID")
+else:
+    # Streamlit Cloud用の設定
+    NOTION_TOKEN = st.secrets.get("NOTION_TOKEN")
+    NOTION_DATABASE_ID = st.secrets.get("NOTION_DATABASE_ID")
 
 # Notionクライアントの初期化
-notion = Client(auth=st.secrets["NOTION_TOKEN"])
+if NOTION_TOKEN:
+    notion = Client(auth=NOTION_TOKEN)
+else:
+    notion = None
 
 # カスタムCSSの追加
 st.markdown("""
@@ -187,8 +197,12 @@ def generate_intern_info(company, industry, location, period, position, grade, s
 def create_notion_page(info):
     """Notionに新しいページを作成する"""
     try:
+        if not NOTION_TOKEN or not NOTION_DATABASE_ID:
+            st.error("⚠️ Notionの設定が完了していません。Streamlit SecretsにNOTION_TOKENとNOTION_DATABASE_IDを設定してください。")
+            return None
+            
         # データベースIDをシークレットから取得
-        database_id = st.secrets["NOTION_DATABASE_ID"]
+        database_id = NOTION_DATABASE_ID
         
         # ページのプロパティを設定
         properties = {
@@ -322,16 +336,12 @@ def main():
             
             # Notionに投稿するかどうかを選択
             if st.checkbox("Notionに投稿する"):
-                try:
-                    # シークレットの存在チェック
-                    if not st.secrets.get("NOTION_TOKEN") or not st.secrets.get("NOTION_DATABASE_ID"):
-                        st.error("⚠️ Notionの設定が完了していません。Streamlit SecretsにNOTION_TOKENとNOTION_DATABASE_IDを設定してください。")
-                    else:
-                        page_url = create_notion_page(info)
-                        if page_url:
-                            st.success(f"✅ Notionに投稿しました！ [ページを開く]({page_url})")
-                except Exception as e:
-                    st.error(f"⚠️ Notionの設定に問題があります: {str(e)}")
+                if not NOTION_TOKEN or not NOTION_DATABASE_ID:
+                    st.error("⚠️ Notionの設定が完了していません。Streamlit SecretsにNOTION_TOKENとNOTION_DATABASE_IDを設定してください。")
+                else:
+                    page_url = create_notion_page(info)
+                    if page_url:
+                        st.success(f"✅ Notionに投稿しました！ [ページを開く]({page_url})")
             
             # 結果を表示
             st.markdown("### 生成されたインターン情報")
