@@ -4,6 +4,12 @@ from notion_client import Client
 import os
 from dotenv import load_dotenv
 
+# Streamlitの状態を確認
+st.write("Streamlitの状態:")
+st.write(f"Streamlit version: {st.__version__}")
+st.write(f"Session state: {st.session_state}")
+st.write(f"Page config: {st.get_page_config()}")
+
 # デバッグ情報の表示
 st.write("デバッグ情報:")
 st.write(f"NOTION_TOKEN exists: {'NOTION_TOKEN' in st.secrets}")
@@ -384,25 +390,20 @@ def main():
             st.success("🎉 インターン情報が生成されました！")
             
             # Notionに投稿するかどうかを選択
-            post_to_notion = st.checkbox("Notionに投稿する")
-            st.write(f"デバッグ: Notionに投稿するのチェックボックス状態: {post_to_notion}")
+            st.write("チェックボックスの状態を確認:")
+            post_to_notion = st.checkbox("Notionに投稿する", key="notion_checkbox")
+            st.write(f"チェックボックスの値: {post_to_notion}")
+            st.write(f"チェックボックスのキー: notion_checkbox")
+            st.write(f"セッション状態: {st.session_state.get('notion_checkbox')}")
             
             if post_to_notion:
                 st.write("デバッグ: Notionに投稿するが選択されました")
-                if not NOTION_TOKEN or not NOTION_DATABASE_ID:
-                    st.error("⚠️ Notionの設定が完了していません。Streamlit SecretsにNOTION_TOKENとNOTION_DATABASE_IDを設定してください。")
-                    st.write(f"NOTION_TOKEN: {NOTION_TOKEN is not None}")
-                    st.write(f"NOTION_DATABASE_ID: {NOTION_DATABASE_ID is not None}")
-                elif not notion:
-                    st.error("⚠️ Notionクライアントの初期化に失敗しました。")
+                st.write(f"デバッグ: infoの内容: {info}")
+                page_url = create_notion_page(info)
+                if page_url:
+                    st.success(f"✅ Notionに投稿しました！ [ページを開く]({page_url})")
                 else:
-                    st.write("デバッグ: Notionページの作成を開始します")
-                    st.write(f"デバッグ: infoの内容: {info}")
-                    page_url = create_notion_page(info)
-                    if page_url:
-                        st.success(f"✅ Notionに投稿しました！ [ページを開く]({page_url})")
-                    else:
-                        st.error("⚠️ Notionページの作成に失敗しました")
+                    st.error("⚠️ Notionページの作成に失敗しました")
             
             # 結果を表示
             st.markdown("### 生成されたインターン情報")
