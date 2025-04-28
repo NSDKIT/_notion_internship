@@ -1,9 +1,141 @@
 import streamlit as st
 from datetime import datetime, time
 import os
-from google.oauth2 import service_account
+from dotenv import load_dotenv
+from google.oauth2.credentials import Credentials
+from google_auth_oauthlib.flow import InstalledAppFlow
+from google.auth.transport.requests import Request
 from googleapiclient.discovery import build
-import pandas as pd
+import pickle
+import base64
+from email.mime.text import MIMEText
+
+# .envファイルから環境変数を読み込む
+load_dotenv()
+
+# Google Sheets APIのスコープ
+SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
+
+def get_google_sheets_service():
+    """Google Sheets APIサービスを取得する関数"""
+    # セッション状態から認証情報を取得
+    if 'google_creds' not in st.session_state:
+        st.session_state.google_creds = None
+    
+    creds = st.session_state.google_creds
+    
+    # 認証情報が無効な場合は更新
+    if not creds or not creds.valid:
+        if creds and creds.expired and creds.refresh_token:
+            creds.refresh(Request())
+            st.session_state.google_creds = creds
+        else:
+            # Streamlit Secretsから認証情報を取得
+            flow = InstalledAppFlow.from_client_config(
+                {
+                    "installed": {
+                        "client_id": st.secrets["GOOGLE_CLIENT_ID"],
+                        "client_secret": st.secrets["GOOGLE_CLIENT_SECRET"],
+                        "redirect_uris": [st.secrets["GOOGLE_REDIRECT_URI"]],
+                        "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+                        "token_uri": "https://oauth2.googleapis.com/token"
+                    }
+                },
+                scopes=SCOPES
+            )
+            # 認証URLを生成
+            auth_url, _ = flow.authorization_url(prompt='consent')
+            
+            # 認証が必要な場合は、メインコンテンツエリアに表示
+            st.warning("⚠️ Googleスプレッドシートへの保存機能を使用するには認証が必要です")
+            st.markdown(f"[認証リンク]({auth_url})")
+            code = st.text_input("認証コードを入力してください：")
+            
+            if code:
+                # 認証コードを使用してトークンを取得
+                flow.fetch_token(code=code)
+                creds = flow.credentials
+                st.session_state.google_creds = creds
+                st.success("✅ 認証が完了しました！")
+            else:
+                return None
+    
+    return build('sheets', 'v4', credentials=creds)
+
+def save_to_sheets(info):
+    """Googleスプレッドシートに情報を保存する関数"""
+    try:
+        service = get_google_sheets_service()
+        if not service:
+            return False, "Google認証が必要です"
+            
+        # スプレッドシートIDを取得
+        spreadsheet_id = st.secrets["SPREADSHEET_ID"]
+        
+        # シート名を取得
+        sheet_name = st.secrets.get("SHEET_NAME", "Sheet1")
+        
+        # ヘッダー行を準備
+        headers = [
+            "インターン名", "企業名", "業界", "形式", "勤務地", "最寄り駅",
+            "期間", "職種", "募集対象", "報酬", "交通費", "勤務可能時間",
+            "勤務日数", "勤務時間", "選考フロー", "応募締切", "開始予定日",
+            "募集人数", "必須スキル", "歓迎スキル", "説明"
+        ]
+        
+        # データ行を準備
+        values = [
+            info["インターン名"], info["企業名"], info["業界"], info["形式"],
+            info["勤務地"], info["最寄り駅"], info["期間"], info["職種"],
+            info["募集対象"], info["報酬"], info["交通費"], info["勤務可能時間"],
+            info["勤務日数"], info["勤務時間"], info["選考フロー"],
+            info["応募締切"], info["開始予定日"], info["募集人数"],
+            info["必須スキル"], info["歓迎スキル"], info["説明"]
+        ]
+        
+        # スプレッドシートに書き込む
+        body = {
+            'values': [headers, values]
+        }
+        
+        # シートが存在しない場合は作成
+        try:
+            service.spreadsheets().values().append(
+                spreadsheetId=spreadsheet_id,
+                range=f"{sheet_name}!A:U",
+                valueInputOption='RAW',
+                insertDataOption='INSERT_ROWS',
+                body=body
+            ).execute()
+        except Exception as e:
+            # シートが存在しない場合は作成して再試行
+            if "Unable to parse range" in str(e):
+                service.spreadsheets().batchUpdate(
+                    spreadsheetId=spreadsheet_id,
+                    body={
+                        'requests': [{
+                            'addSheet': {
+                                'properties': {
+                                    'title': sheet_name
+                                }
+                            }
+                        }]
+                    }
+                ).execute()
+                
+                service.spreadsheets().values().append(
+                    spreadsheetId=spreadsheet_id,
+                    range=f"{sheet_name}!A:U",
+                    valueInputOption='RAW',
+                    insertDataOption='INSERT_ROWS',
+                    body=body
+                ).execute()
+            else:
+                raise e
+        
+        return True, "スプレッドシートに保存しました"
+    except Exception as e:
+        return False, f"スプレッドシートへの保存に失敗しました: {str(e)}"
 
 # ページ設定
 st.set_page_config(
@@ -74,154 +206,6 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# Google Sheets APIへの接続
-@st.cache_resource
-def get_google_sheets_service():
-    """Google Sheets APIサービスを取得する関数"""
-    try:
-        # デバッグ情報を追加
-        print("利用可能なシークレットキー:", list(st.secrets.keys()))
-        
-        # サービスアカウント情報の取得方法を修正
-        credentials = service_account.Credentials.from_service_account_info(
-            st.secrets["gcp_service_account"],
-            scopes=["https://www.googleapis.com/auth/spreadsheets"]
-        )
-        
-        return build('sheets', 'v4', credentials=credentials)
-    except Exception as e:
-        st.error(f"認証エラー: {str(e)}")
-        st.write(f"エラーの詳細: {type(e).__name__}, {str(e)}")
-        return None
-
-def save_to_sheets(info):
-    """Googleスプレッドシートに情報を保存する関数"""
-    try:
-        # デバッグ情報
-        st.write("デバッグ情報:")
-        st.write(f"利用可能なシークレットキー: {list(st.secrets.keys())}")
-        
-        if "gcp_service_account" in st.secrets:
-            st.write("gcp_service_accountの中のキー:")
-            for key in st.secrets["gcp_service_account"]:
-                # プライベートキーなどの機密情報は表示しない
-                if key == "private_key":
-                    st.write(f"- private_key: (存在します)")
-                else:
-                    st.write(f"- {key}")
-        
-        # TOMLファイルの階層構造の問題を回避する代替コード
-        try:
-            # 直接スプレッドシートIDを取得してみる
-            spreadsheet_id = st.secrets.get("SPREADSHEET_ID", None)
-            if spreadsheet_id:
-                st.write(f"SPREADSHEET_ID直接アクセス: あり")
-            else:
-                st.write("SPREADSHEET_ID直接アクセス: なし")
-                
-                # gcp_service_accountの中から探す
-                if "gcp_service_account" in st.secrets and "SPREADSHEET_ID" in st.secrets["gcp_service_account"]:
-                    spreadsheet_id = st.secrets["gcp_service_account"]["SPREADSHEET_ID"]
-                    st.write("gcp_service_accountの中にSPREADSHEET_IDがあります")
-                else:
-                    # ハードコードバックアップ (テスト用)
-                    spreadsheet_id = "1SsUwD9XsadcfaxsefaMu49lx72iQxaefdaefA7KzvM"
-                    st.write("ハードコードされたSPREADSHEET_IDを使用します")
-            
-            # シート名も同様に
-            sheet_name = st.secrets.get("SHEET_NAME", None)
-            if not sheet_name:
-                if "gcp_service_account" in st.secrets and "SHEET_NAME" in st.secrets["gcp_service_account"]:
-                    sheet_name = st.secrets["gcp_service_account"]["SHEET_NAME"]
-                else:
-                    sheet_name = "info"
-                    
-            st.write(f"使用するスプレッドシートID: {spreadsheet_id[:5]}...{spreadsheet_id[-5:]}")
-            st.write(f"使用するシート名: {sheet_name}")
-                    
-            service = get_google_sheets_service()
-            if not service:
-                return False, "Google認証に失敗しました"
-            
-            # ヘッダー行を準備
-            headers = [
-                "インターン名", "企業名", "業界", "形式", "勤務地", "最寄り駅",
-                "期間", "職種", "募集対象", "報酬", "交通費", "勤務可能時間",
-                "勤務日数", "勤務時間", "選考フロー", "応募締切", "開始予定日",
-                "募集人数", "必須スキル", "歓迎スキル", "説明"
-            ]
-            
-            # データ行を準備
-            values = [
-                info["インターン名"], info["企業名"], info["業界"], info["形式"],
-                info["勤務地"], info["最寄り駅"], info["期間"], info["職種"],
-                info["募集対象"], info["報酬"], info["交通費"], info["勤務可能時間"],
-                info["勤務日数"], info["勤務時間"], info["選考フロー"],
-                info["応募締切"], info["開始予定日"], info["募集人数"],
-                info["必須スキル"], info["歓迎スキル"], info["説明"]
-            ]
-            
-            # シートが存在するか確認
-            try:
-                # シート情報を取得
-                sheet_metadata = service.spreadsheets().get(spreadsheetId=spreadsheet_id).execute()
-                sheets = sheet_metadata.get('sheets', '')
-                
-                # シート名リストを取得
-                sheet_names = [sheet['properties']['title'] for sheet in sheets]
-                
-                # シートが存在しない場合は作成
-                if sheet_name not in sheet_names:
-                    service.spreadsheets().batchUpdate(
-                        spreadsheetId=spreadsheet_id,
-                        body={
-                            'requests': [{
-                                'addSheet': {
-                                    'properties': {
-                                        'title': sheet_name
-                                    }
-                                }
-                            }]
-                        }
-                    ).execute()
-                    
-                    # ヘッダー行を書き込む
-                    service.spreadsheets().values().update(
-                        spreadsheetId=spreadsheet_id,
-                        range=f"{sheet_name}!A1:U1",
-                        valueInputOption='RAW',
-                        body={'values': [headers]}
-                    ).execute()
-            except Exception as e:
-                st.error(f"シート確認中にエラーが発生しました: {str(e)}")
-                return False, f"シート確認中にエラーが発生しました: {str(e)}"
-            
-            # 既存のデータを取得
-            result = service.spreadsheets().values().get(
-                spreadsheetId=spreadsheet_id,
-                range=f"{sheet_name}!A:U"
-            ).execute()
-            
-            # 行番号を計算（ヘッダー行を除く）
-            rows = result.get('values', [])
-            next_row = len(rows) + 1
-            
-            # 新しいデータを追加
-            service.spreadsheets().values().update(
-                spreadsheetId=spreadsheet_id,
-                range=f"{sheet_name}!A{next_row}:U{next_row}",
-                valueInputOption='RAW',
-                body={'values': [values]}
-            ).execute()
-            
-            return True, "スプレッドシートに保存しました"
-        except Exception as e:
-            st.error(f"エラーの詳細: {str(e)}")
-            return False, f"スプレッドシートへの保存に失敗しました: {str(e)}"
-    except Exception as e:
-        st.error(f"予期せぬエラーが発生しました: {str(e)}")
-        return False, f"予期せぬエラーが発生しました: {str(e)}"
-
 # 選択肢の定義
 INDUSTRIES = [
     "IT・テクノロジー",
@@ -254,7 +238,6 @@ def generate_time_list():
         for minute in [0, 30]:
             time_str = f"{hour:02d}:{minute:02d}"
             times.append(time_str)
-    times.append("フレックス制")
     return times
 
 TIMES = generate_time_list()
@@ -344,66 +327,66 @@ def generate_intern_info(company, industry, work_type, location, nearest_station
     working_hours = f"{start_time}〜{end_time}" if start_time != "フレックス制" and end_time != "フレックス制" else "フレックス制"
     description = f"""
 【募集要項】
-###### 募集職種
+### 募集職種
 {position}
 
-###### 雇用形態
+### 雇用形態
 アルバイト
 
-###### 給与
+### 給与
 {salary}
 
-###### 交通費
+### 交通費
 {transportation_fee}
 
-###### 勤務地
+### 勤務地
 {location}
 
-###### 最寄り駅
+### 最寄り駅
 {nearest_station}
 
-###### 勤務可能時間
+### 勤務可能時間
 {working_hours}
 
-###### 勤務日数
+### 勤務日数
 {working_days}
 
-###### 勤務時間
+### 勤務時間
 {working_time_per_week}
 
-###### 勤務期間
+### 勤務期間
 {period}
 
-###### 業界
+### 業界
 {industry}
 
-###### 業種
+### 業種
 {position}
 
-###### 形式
+### 形式
 {work_type}
 
-###### 勤務時間
+### 勤務時間
 ・期間：{start_date}〜{period}以上勤務できる方
 ・稼働時間：{working_time_per_week}以上勤務できる方
 ・勤務時間：{working_hours}内（土日祝日を除く）
 
-###### 応募条件
+### 応募条件
 ・{grade}大歓迎！
 
-###### 必須スキル
+### 必須スキル
 {required_skills}
 
-###### 歓迎スキル
+### 歓迎スキル
 {skills}
 
-###### 選考フロー
+### 選考フロー
 {selection_process}
 
-###### 応募締切
+### 応募締切
 {deadline}
 
-###### 募集人数
+### 募集人数
 {capacity}名
 """
     return {
@@ -434,10 +417,6 @@ def main():
     # セッション状態の初期化
     if 'info' not in st.session_state:
         st.session_state.info = None
-    if 'info_generated' not in st.session_state:
-        st.session_state.info_generated = False
-    if 'save_option' not in st.session_state:
-        st.session_state.save_option = "保存しない"
     
     # ヘッダー
     st.markdown("""
@@ -468,7 +447,7 @@ def main():
     col1, col2 = st.columns(2)
     
     with col1:
-        st.markdown("###### 基本情報")
+        st.markdown("### 基本情報")
         company = st.text_input("企業名", placeholder="例: 株式会社〇〇")
         industry = st.selectbox("業界", INDUSTRIES)
         work_type = st.selectbox("形式", WORK_TYPES)
@@ -486,12 +465,16 @@ def main():
             transportation_fee = st.text_input("交通費（その他）", placeholder="例: 上限5,000円まで支給")
     
     with col2:
-        st.markdown("###### 詳細情報")
+        st.markdown("### 詳細情報")
         col_start, col_end = st.columns(2)
         with col_start:
             start_time = st.selectbox("開始時間", TIMES)
+            if start_time == "その他":
+                start_time = st.text_input("開始時間（その他）", placeholder="例: フレックス制")
         with col_end:
             end_time = st.selectbox("終了時間", TIMES)
+            if end_time == "その他":
+                end_time = st.text_input("終了時間（その他）", placeholder="例: フレックス制")
         working_days = st.selectbox("勤務日数", WORKING_DAYS)
         if working_days == "その他":
             working_days = st.text_input("勤務日数（その他）", placeholder="例: 月2回〜")
@@ -518,7 +501,6 @@ def main():
             
             # セッション状態に情報を保存
             st.session_state.info = info
-            st.session_state.info_generated = True
             
             st.success("🎉 インターン情報が生成されました！")
             
@@ -534,50 +516,25 @@ def main():
             st.session_state.save_to_sheets = save_to_sheets
             
             if save_to_sheets:
+                st.write("デバッグ: 保存処理を開始")
                 with st.spinner("スプレッドシートに保存中..."):
                     try:
+                        st.write("デバッグ: save_to_sheets関数を呼び出し")
                         success, result = save_to_sheets(info)
+                        st.write("デバッグ: 保存結果 =", success, result)
                         if success:
                             st.success(f"✅ {result}")
                         else:
                             st.error(f"⚠️ {result}")
+                            # 認証が必要な場合は、認証フローを再表示
                             if "認証が必要" in result:
+                                st.write("デバッグ: 認証フローを開始")
                                 get_google_sheets_service()
                     except Exception as e:
                         st.error(f"⚠️ エラーが発生しました: {str(e)}")
+                        st.write("デバッグ: エラーの詳細 =", str(e))
         else:
             st.error("⚠️ 必須項目（企業名、勤務地、必須スキル）を入力してください。")
 
-    # 生成された情報がある場合に表示
-    if st.session_state.info_generated and st.session_state.info:
-        # 結果を表示
-        st.markdown("###### 生成されたインターン情報")
-        st.code(st.session_state.info['説明'], language="text")
-        
-        # Googleスプレッドシートへの保存オプション
-        st.markdown("###### Googleスプレッドシートへの保存")
-        
-        # ラジオボタンの選択状態をセッションに保存
-        st.session_state.save_option = st.radio(
-            "保存オプション",
-            ["保存しない", "Googleスプレッドシートに保存する"],
-            key="save_option_radio"
-        )
-        
-        # 保存オプションが選択された場合、保存ボタンを表示
-        if st.session_state.save_option == "Googleスプレッドシートに保存する":
-            save_button = st.button("保存を実行する", key="save_button")
-            if save_button:
-                with st.spinner("スプレッドシートに保存中..."):
-                    try:
-                        success, result = save_to_sheets(st.session_state.info)
-                        if success:
-                            st.success(f"✅ {result}")
-                        else:
-                            st.error(f"⚠️ {result}")
-                    except Exception as e:
-                        st.error(f"⚠️ エラーが発生しました: {str(e)}")
-                        st.write(f"エラー詳細: {str(e)}")
-
 if __name__ == "__main__":
-    main()
+    main() 
