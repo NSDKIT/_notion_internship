@@ -290,9 +290,13 @@ def generate_intern_info(company, industry, work_type, location, nearest_station
 def create_notion_page(info):
     """Notionにページを作成する関数"""
     try:
+        # デバッグ情報の表示
+        st.write("Notion Token:", os.getenv("NOTION_TOKEN")[:10] + "...")
+        st.write("Database ID:", os.getenv("NOTION_DATABASE_ID"))
+        
         # ページのプロパティを設定
         properties = {
-            "インターン名": {"title": [{"text": {"content": info["インターン名"]}}]},
+            "Name": {"title": [{"text": {"content": info["インターン名"]}}]},  # タイトルプロパティの名前を修正
             "企業名": {"rich_text": [{"text": {"content": info["企業名"]}}]},
             "業界": {"select": {"name": info["業界"]}},
             "形式": {"select": {"name": info["形式"]}},
@@ -334,6 +338,7 @@ def create_notion_page(info):
         
         return True, new_page["url"]
     except Exception as e:
+        st.error(f"エラーの詳細: {str(e)}")
         return False, str(e)
 
 def main():
@@ -443,12 +448,16 @@ def main():
             
             # Notionに送信するかどうかのチェックボックス
             if os.getenv("NOTION_TOKEN") and os.getenv("NOTION_DATABASE_ID"):
+                st.write("Notion設定が完了しています")
                 if st.checkbox("Notionに送信する"):
-                    success, result = create_notion_page(info)
-                    if success:
-                        st.success(f"✅ Notionに送信しました！\n[ページを開く]({result})")
-                    else:
-                        st.error(f"⚠️ Notionへの送信に失敗しました: {result}")
+                    with st.spinner("Notionに送信中..."):
+                        success, result = create_notion_page(info)
+                        if success:
+                            st.success(f"✅ Notionに送信しました！\n[ページを開く]({result})")
+                        else:
+                            st.error(f"⚠️ Notionへの送信に失敗しました: {result}")
+            else:
+                st.warning("⚠️ Notion設定が完了していません。サイドバーで設定を行ってください。")
         else:
             st.error("⚠️ 必須項目（企業名、勤務地、必須スキル）を入力してください。")
 
