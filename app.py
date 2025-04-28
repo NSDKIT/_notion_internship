@@ -3,6 +3,7 @@ from datetime import datetime, time
 from notion_client import Client
 import os
 from dotenv import load_dotenv
+from notion_config import create_notion_page, is_notion_configured
 
 # .envファイルから環境変数を読み込む
 load_dotenv()
