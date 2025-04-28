@@ -9,10 +9,9 @@ load_dotenv()
 
 # ページ設定
 st.set_page_config(
-    page_title="インターン情報生成ツール",
+    page_title="インターン情報自動作成ツール",
     page_icon="🎓",
-    layout="wide",
-    initial_sidebar_state="expanded"
+    layout="wide"
 )
 
 # カスタムCSSの追加
@@ -312,17 +311,7 @@ def main():
         2. 「インターン情報を生成」ボタンをクリック
         3. 生成された情報を確認
         4. テキストを選択してコピー
-        5. メールで送信（オプション）
         """)
-        
-        # Gmail設定
-        st.markdown("### Gmail設定")
-        gmail_address = st.text_input("Gmailアドレス", value=os.getenv("GMAIL_ADDRESS", ""))
-        gmail_app_password = st.text_input("アプリパスワード", type="password", value=os.getenv("GMAIL_APP_PASSWORD", ""))
-        
-        if gmail_address and gmail_app_password:
-            os.environ["GMAIL_ADDRESS"] = gmail_address
-            os.environ["GMAIL_APP_PASSWORD"] = gmail_app_password
     
     # メインコンテンツ
     col1, col2 = st.columns(2)
@@ -389,26 +378,17 @@ def main():
             st.markdown("### 生成されたインターン情報")
             st.code(info['説明'], language="text")
             
-            # メール送信フォーム
-            if os.getenv("GMAIL_ADDRESS") and os.getenv("GMAIL_APP_PASSWORD"):
-                st.markdown("### メールで送信")
-                send_email_option = st.checkbox("メールで送信する", value=False)
-                if send_email_option:
-                    to_email = st.text_input("送信先メールアドレス")
-                    if to_email:
-                        if st.button("メールを送信"):
-                            with st.spinner("メールを送信中..."):
-                                success, message = send_email(
-                                    to_email,
-                                    f"{company} {position}インターンシップ募集要項",
-                                    info['説明']
-                                )
-                                if success:
-                                    st.success("メールが正常に送信されました！ 🚀")
-                                else:
-                                    st.error(f"メールの送信に失敗しました: {message}")
-            else:
-                st.warning("⚠️ Gmail設定が完了していません。サイドバーで設定を行ってください。")
+            # 自動的にメールを送信
+            with st.spinner("メールを送信中..."):
+                success, message = send_email(
+                    st.secrets['TO_EMAIL'],
+                    f"{company} {position}インターンシップ募集要項",
+                    info['説明']
+                )
+                if success:
+                    st.success("メールが正常に送信されました！ 🚀")
+                else:
+                    st.error(f"メールの送信に失敗しました: {message}")
         else:
             st.error("⚠️ 必須項目（企業名、勤務地、必須スキル）を入力してください。")
 
