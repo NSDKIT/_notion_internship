@@ -116,9 +116,6 @@ def save_to_sheets(info):
                 else:
                     sheet_name = "info"
                     
-            st.write(f"使用するスプレッドシートID: {spreadsheet_id[:5]}...{spreadsheet_id[-5:]}")
-            st.write(f"使用するシート名: {sheet_name}")
-                    
             service = get_google_sheets_service()
             if not service:
                 return False, "Google認証に失敗しました"
