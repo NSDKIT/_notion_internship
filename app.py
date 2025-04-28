@@ -365,14 +365,6 @@ def main():
             
             st.success("🎉 インターン情報が生成されました！")
             
-            # 結果を表示
-            st.markdown("### 生成されたインターン情報")
-            st.markdown(f"""
-            <div style='background-color: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);'>
-                <pre style='white-space: pre-wrap;'>{info['説明']}</pre>
-            </div>
-            """, unsafe_allow_html=True)
-            
             # コピーボタン
             if st.button("全てをコピー"):
                 try:
@@ -381,6 +373,19 @@ def main():
                 except Exception as e:
                     st.warning("⚠️ 自動コピーに失敗しました。上記のテキストを手動でコピーしてください。")
                     st.error(f"エラー詳細: {str(e)}")
+            
+            # 結果を表示
+            st.markdown("### 生成されたインターン情報")
+            
+            # コピー可能なテキストエリア
+            st.text_area("コピー用テキスト", info['説明'], height=300, key="copy_text")
+            
+            # プレビュー表示
+            st.markdown(f"""
+            <div style='background-color: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);'>
+                <pre style='white-space: pre-wrap;'>{info['説明']}</pre>
+            </div>
+            """, unsafe_allow_html=True)
         else:
             st.error("⚠️ 必須項目（企業名、勤務地、必須スキル）を入力してください。")
 
