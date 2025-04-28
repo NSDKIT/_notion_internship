@@ -99,6 +99,11 @@ def save_to_sheets(info):
     try:
         # TOMLファイルの階層構造の問題を回避する代替コード
         try:
+            # 直接スプレッドシートIDを取得してみる
+            spreadsheet_id = st.secrets.get("SPREADSHEET_ID", None)
+            # シート名も同様に
+            sheet_name = st.secrets.get("SHEET_NAME", None)
+            
             service = get_google_sheets_service()
             if not service:
                 return False, "Google認証に失敗しました"
