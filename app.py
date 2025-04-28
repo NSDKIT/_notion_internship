@@ -8,7 +8,13 @@ from dotenv import load_dotenv
 st.write("Streamlitの状態:")
 st.write(f"Streamlit version: {st.__version__}")
 st.write(f"Session state: {st.session_state}")
-st.write(f"Page config: {st.get_page_config()}")
+
+# ページ設定を確認
+try:
+    st.write("Page config:")
+    st.write(st.session_state.get("_page_config", "No page config set"))
+except Exception as e:
+    st.write(f"Error getting page config: {str(e)}")
 
 # デバッグ情報の表示
 st.write("デバッグ情報:")
