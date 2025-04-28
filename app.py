@@ -521,7 +521,6 @@ def main():
             st.session_state.info_generated = True
             
             st.success("🎉 インターン情報が生成されました！")
-<<<<<<< HEAD
             
             # 結果を表示
             st.markdown("### 生成されたインターン情報")
@@ -538,10 +537,17 @@ def main():
                 with st.spinner("スプレッドシートに保存中..."):
                     try:
                         success, result = save_to_sheets(info)
-=======
+                        if success:
+                            st.success(f"✅ {result}")
+                        else:
+                            st.error(f"⚠️ {result}")
+                            if "認証が必要" in result:
+                                get_google_sheets_service()
+                    except Exception as e:
+                        st.error(f"⚠️ エラーが発生しました: {str(e)}")
         else:
             st.error("⚠️ 必須項目（企業名、勤務地、必須スキル）を入力してください。")
-    
+
     # 生成された情報がある場合に表示
     if st.session_state.info_generated and st.session_state.info:
         # 結果を表示
@@ -565,23 +571,13 @@ def main():
                 with st.spinner("スプレッドシートに保存中..."):
                     try:
                         success, result = save_to_sheets(st.session_state.info)
->>>>>>> 12604df6df5ee02be752bb0c23c0f9a4f1429d1d
                         if success:
                             st.success(f"✅ {result}")
                         else:
                             st.error(f"⚠️ {result}")
-<<<<<<< HEAD
-                            if "認証が必要" in result:
-                                get_google_sheets_service()
-                    except Exception as e:
-                        st.error(f"⚠️ エラーが発生しました: {str(e)}")
-        else:
-            st.error("⚠️ 必須項目（企業名、勤務地、必須スキル）を入力してください。")
-=======
                     except Exception as e:
                         st.error(f"⚠️ エラーが発生しました: {str(e)}")
                         st.write(f"エラー詳細: {str(e)}")
->>>>>>> 12604df6df5ee02be752bb0c23c0f9a4f1429d1d
 
 if __name__ == "__main__":
     main()
