@@ -1,5 +1,14 @@
 import streamlit as st
 from datetime import datetime
+from notion_client import Client
+import os
+from dotenv import load_dotenv
+
+# .envファイルから環境変数を読み込む
+load_dotenv()
+
+# Notionクライアントの初期化
+notion = Client(auth=st.secrets["NOTION_TOKEN"])
 
 # カスタムCSSの追加
 st.markdown("""
@@ -175,6 +184,85 @@ def generate_intern_info(company, industry, location, period, position, grade, s
         "必要なスキル・経験": skills
     }
 
+def create_notion_page(info):
+    """Notionに新しいページを作成する"""
+    try:
+        # データベースIDをシークレットから取得
+        database_id = st.secrets["NOTION_DATABASE_ID"]
+        
+        # ページのプロパティを設定
+        properties = {
+            "インターン名": {"title": [{"text": {"content": info["インターン名"]}}]},
+            "企業名": {"rich_text": [{"text": {"content": info["企業名"]}}]},
+            "業界": {"select": {"name": info["業界"]}},
+            "勤務地": {"rich_text": [{"text": {"content": info["勤務地"]}}]},
+            "期間": {"select": {"name": info["期間"]}},
+            "職種": {"select": {"name": info["職種"]}},
+            "募集対象": {"select": {"name": info["募集対象"]}},
+            "報酬": {"select": {"name": info["報酬"]}},
+            "応募締切": {"date": {"start": info["応募締切"]}},
+            "開始予定日": {"date": {"start": info["開始予定日"]}},
+            "募集人数": {"number": int(info["募集人数"])}
+        }
+        
+        # ページのコンテンツを設定
+        children = [
+            {
+                "object": "block",
+                "type": "heading_1",
+                "heading_1": {
+                    "rich_text": [{"type": "text", "text": {"content": info["インターン名"]}}]
+                }
+            },
+            {
+                "object": "block",
+                "type": "paragraph",
+                "paragraph": {
+                    "rich_text": [{"type": "text", "text": {"content": info["説明"]}}]
+                }
+            },
+            {
+                "object": "block",
+                "type": "heading_2",
+                "heading_2": {
+                    "rich_text": [{"type": "text", "text": {"content": "選考フロー"}}]
+                }
+            },
+            {
+                "object": "block",
+                "type": "paragraph",
+                "paragraph": {
+                    "rich_text": [{"type": "text", "text": {"content": info["選考フロー"]}}]
+                }
+            },
+            {
+                "object": "block",
+                "type": "heading_2",
+                "heading_2": {
+                    "rich_text": [{"type": "text", "text": {"content": "必要なスキル・経験"}}]
+                }
+            },
+            {
+                "object": "block",
+                "type": "paragraph",
+                "paragraph": {
+                    "rich_text": [{"type": "text", "text": {"content": info["必要なスキル・経験"]}}]
+                }
+            }
+        ]
+        
+        # ページを作成
+        new_page = notion.pages.create(
+            parent={"database_id": database_id},
+            properties=properties,
+            children=children
+        )
+        
+        return new_page["url"]
+    except Exception as e:
+        st.error(f"Notionへの投稿に失敗しました: {str(e)}")
+        return None
+
 def main():
     # ヘッダー
     st.markdown("""
@@ -231,6 +319,14 @@ def main():
             )
             
             st.success("🎉 インターン情報が生成されました！")
+            
+            # Notionに投稿するかどうかを選択
+            if "NOTION_TOKEN" in st.secrets and "NOTION_DATABASE_ID" in st.secrets:
+                page_url = create_notion_page(info)
+                if page_url:
+                    st.success(f"✅ Notionに投稿しました！ [ページを開く]({page_url})")
+            else:
+                st.error("⚠️ Notionの設定が完了していません。Streamlit SecretsにNOTION_TOKENとNOTION_DATABASE_IDを設定してください。")
             
             # 結果を表示
             st.markdown("### 生成されたインターン情報")
