@@ -39,6 +39,120 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
+# 選択肢の定義
+INDUSTRIES = [
+    "IT・テクノロジー",
+    "金融・保険",
+    "製造・メーカー",
+    "商社・流通",
+    "サービス",
+    "広告・マーケティング",
+    "コンサルティング",
+    "メディア・エンターテインメント",
+    "小売・流通",
+    "不動産・建設",
+    "医療・ヘルスケア",
+    "教育",
+    "エネルギー・資源",
+    "運輸・物流",
+    "その他"
+]
+
+WORK_TYPES = [
+    "対面",
+    "オンライン",
+    "ハイブリッド"
+]
+
+# 24時間（30分単位）の時間リストを生成
+def generate_time_list():
+    times = []
+    for hour in range(24):
+        for minute in [0, 30]:
+            time_str = f"{hour:02d}:{minute:02d}"
+            times.append(time_str)
+    return times
+
+TIMES = generate_time_list()
+
+WORKING_DAYS = [
+    "週1日",
+    "週2日",
+    "週3日",
+    "週4日",
+    "週5日",
+    "週1日〜",
+    "週2日〜",
+    "週3日〜",
+    "週4日〜",
+    "週5日〜",
+    "その他"
+]
+
+TRANSPORTATION_FEES = [
+    "支給なし",
+    "一部支給",
+    "全額支給",
+    "その他"
+]
+
+PERIODS = [
+    "1日",
+    "2日",
+    "3日",
+    "1週間",
+    "2週間",
+    "3週間",
+    "1ヶ月",
+    "2ヶ月",
+    "3ヶ月",
+    "夏季（7-8月）",
+    "冬季（12-1月）",
+    "春季（3-4月）",
+    "通年",
+    "その他"
+]
+
+POSITIONS = [
+    "エンジニア",
+    "デザイナー",
+    "マーケティング",
+    "営業",
+    "企画",
+    "人事",
+    "経理・財務",
+    "法務",
+    "その他"
+]
+
+GRADES = [
+    "大学1年生",
+    "大学2年生",
+    "大学3年生",
+    "大学4年生",
+    "大学院1年生",
+    "大学院2年生",
+    "その他"
+]
+
+SALARIES = [
+    "無給",
+    "時給1,000円",
+    "時給1,500円",
+    "時給2,000円",
+    "日給10,000円",
+    "日給15,000円",
+    "その他"
+]
+
+SELECTION_PROCESS = [
+    "書類選考 → 面接",
+    "書類選考 → グループディスカッション → 面接",
+    "書類選考 → 筆記試験 → 面接",
+    "書類選考 → グループワーク → 面接",
+    "その他"
+]
+
 # フォームの各セクション定義
 sections = [
     {"title": "基本情報", "fields": [
@@ -47,10 +161,10 @@ sections = [
         {"label": "形式", "key": "format_type", "type": "select", "options": WORK_TYPES},
         {"label": "勤務地*", "key": "location", "type": "text"},
         {"label": "最寄り駅", "key": "nearest_station", "type": "text"},
-        {"label": "インターン期間", "key": "period", "type": "text"},
-        {"label": "インターン職種", "key": "position", "type": "text"},
+        {"label": "インターン期間", "key": "period", "type": "select", "options": PERIODS},
+        {"label": "インターン職種", "key": "position", "type": "select", "options": POSITIONS},
         {"label": "募集対象", "key": "grade", "type": "multiselect", "options": GRADES},
-        {"label": "報酬（時給）", "key": "salary", "type": "number", "min": 0, "step": 100, "value": 1000},
+        {"label": "報酬（時給）", "key": "salary", "type": "select", "options": SALARIES},
         {"label": "交通費", "key": "transportation_fee", "type": "select", "options": TRANSPORTATION_FEES}
     ]},
     {"title": "勤務時間", "fields": [
@@ -230,120 +344,6 @@ with st.sidebar:
     - メール送信にはGoogle認証が必要です
     - Notionデータベースへの保存にはNotionトークンが必要です
     """)
-
-# 選択肢の定義
-INDUSTRIES = [
-    "IT・テクノロジー",
-    "金融・保険",
-    "製造・メーカー",
-    "商社・流通",
-    "サービス",
-    "広告・マーケティング",
-    "コンサルティング",
-    "メディア・エンターテインメント",
-    "小売・流通",
-    "不動産・建設",
-    "医療・ヘルスケア",
-    "教育",
-    "エネルギー・資源",
-    "運輸・物流",
-    "その他"
-]
-
-WORK_TYPES = [
-    "対面",
-    "オンライン",
-    "ハイブリッド"
-]
-
-# 24時間（30分単位）の時間リストを生成
-def generate_time_list():
-    times = []
-    for hour in range(24):
-        for minute in [0, 30]:
-            time_str = f"{hour:02d}:{minute:02d}"
-            times.append(time_str)
-    return times
-
-TIMES = generate_time_list()
-
-WORKING_DAYS = [
-    "週1日",
-    "週2日",
-    "週3日",
-    "週4日",
-    "週5日",
-    "週1日〜",
-    "週2日〜",
-    "週3日〜",
-    "週4日〜",
-    "週5日〜",
-    "その他"
-]
-
-TRANSPORTATION_FEES = [
-    "支給なし",
-    "一部支給",
-    "全額支給",
-    "その他"
-]
-
-PERIODS = [
-    "1日",
-    "2日",
-    "3日",
-    "1週間",
-    "2週間",
-    "3週間",
-    "1ヶ月",
-    "2ヶ月",
-    "3ヶ月",
-    "夏季（7-8月）",
-    "冬季（12-1月）",
-    "春季（3-4月）",
-    "通年",
-    "その他"
-]
-
-POSITIONS = [
-    "エンジニア",
-    "デザイナー",
-    "マーケティング",
-    "営業",
-    "企画",
-    "人事",
-    "経理・財務",
-    "法務",
-    "その他"
-]
-
-GRADES = [
-    "大学1年生",
-    "大学2年生",
-    "大学3年生",
-    "大学4年生",
-    "大学院1年生",
-    "大学院2年生",
-    "その他"
-]
-
-SALARIES = [
-    "無給",
-    "時給1,000円",
-    "時給1,500円",
-    "時給2,000円",
-    "日給10,000円",
-    "日給15,000円",
-    "その他"
-]
-
-SELECTION_PROCESS = [
-    "書類選考 → 面接",
-    "書類選考 → グループディスカッション → 面接",
-    "書類選考 → 筆記試験 → 面接",
-    "書類選考 → グループワーク → 面接",
-    "その他"
-]
 
 # Gmail APIのスコープ
 SCOPES = ['https://www.googleapis.com/auth/gmail.send']
