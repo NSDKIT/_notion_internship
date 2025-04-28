@@ -381,7 +381,7 @@ def main():
             # 自動的にメールを送信
             with st.spinner("メールを送信中..."):
                 success, message = send_email(
-                    st.secrets['TO_EMAIL'],
+                    st.secrets["TO_EMAIL"],
                     f"{company} {position}インターンシップ募集要項",
                     info['説明']
                 )

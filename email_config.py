@@ -1,11 +1,6 @@
 import smtplib
 from email.mime.text import MIMEText
-import os
-from dotenv import load_dotenv
 import streamlit as st
-
-# .envファイルから環境変数を読み込む
-load_dotenv()
 
 def send_email(to_email, subject, body):
     """メールを送信する関数"""
@@ -15,8 +10,8 @@ def send_email(to_email, subject, body):
         smtp_port = 587
         
         # 送信元のメールアドレスとパスワード
-        from_email = os.getenv("GMAIL_ADDRESS")
-        password = os.getenv("GMAIL_APP_PASSWORD")
+        from_email = st.secrets["GMAIL_ADDRESS"]
+        password = st.secrets["GMAIL_APP_PASSWORD"]
         
         if not from_email or not password:
             return False, "Gmail認証情報が設定されていません"
