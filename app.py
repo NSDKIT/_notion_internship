@@ -101,12 +101,12 @@ def save_to_sheets(info):
         try:
             # 直接スプレッドシートIDを取得してみる
             spreadsheet_id = st.secrets.get("SPREADSHEET_ID", None)
-                # gcp_service_accountの中から探す
-                if "gcp_service_account" in st.secrets and "SPREADSHEET_ID" in st.secrets["gcp_service_account"]:
-                    spreadsheet_id = st.secrets["gcp_service_account"]["SPREADSHEET_ID"]
-                else:
-                    # ハードコードバックアップ (テスト用)
-                    spreadsheet_id = "1SsUwD9XsadcfaxsefaMu49lx72iQxaefdaefA7KzvM"
+            # gcp_service_accountの中から探す
+            if "gcp_service_account" in st.secrets and "SPREADSHEET_ID" in st.secrets["gcp_service_account"]:
+                spreadsheet_id = st.secrets["gcp_service_account"]["SPREADSHEET_ID"]
+            else:
+                # ハードコードバックアップ (テスト用)
+                spreadsheet_id = "1SsUwD9XsadcfaxsefaMu49lx72iQxaefdaefA7KzvM"
             
             # シート名も同様に
             sheet_name = st.secrets.get("SHEET_NAME", None)
