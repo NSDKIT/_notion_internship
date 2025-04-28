@@ -480,14 +480,16 @@ def main():
             
             # Googleスプレッドシートに保存するかどうかのチェックボックス
             save_to_sheets_check = st.checkbox("Googleスプレッドシートに保存する")
-            
+
             if save_to_sheets_check:
-                with st.spinner("スプレッドシートに保存中..."):
-                    success, result = save_to_sheets(info)
-                    if success:
-                        st.success(f"✅ {result}")
-                    else:
-                        st.error(f"⚠️ {result}")
+                # 別のボタンを追加して明示的に保存処理を実行
+                if st.button("保存を実行する"):
+                    with st.spinner("スプレッドシートに保存中..."):
+                        success, result = save_to_sheets(info)
+                        if success:
+                            st.success(f"✅ {result}")
+                        else:
+                            st.error(f"⚠️ {result}")
         else:
             st.error("⚠️ 必須項目（企業名、勤務地、必須スキル）を入力してください。")
 
