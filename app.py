@@ -142,22 +142,6 @@ def save_to_sheets(info):
             service = get_google_sheets_service()
             if not service:
                 return False, "Google認証に失敗しました"
-                
-            # スプレッドシートIDを取得
-            try:
-                spreadsheet_id = st.secrets["SPREADSHEET_ID"]
-                st.write(f"SPREADSHEET_ID: {spreadsheet_id[:5]}...{spreadsheet_id[-3:]}")
-            except Exception as e:
-                st.error(f"SPREADSHEET_IDの取得に失敗: {str(e)}")
-                return False, f"SPREADSHEET_IDの取得に失敗: {str(e)}"
-            
-            # シート名を取得
-            try:
-                sheet_name = st.secrets.get("SHEET_NAME", "Sheet1")
-                st.write(f"SHEET_NAME: {sheet_name}")
-            except Exception as e:
-                st.error(f"SHEET_NAMEの取得に失敗: {str(e)}")
-                return False, f"SHEET_NAMEの取得に失敗: {str(e)}"
             
             # ヘッダー行を準備
             headers = [
@@ -234,7 +218,10 @@ def save_to_sheets(info):
         except Exception as e:
             st.error(f"エラーの詳細: {str(e)}")
             return False, f"スプレッドシートへの保存に失敗しました: {str(e)}"
-    
+    except Exception as e:
+        st.error(f"予期せぬエラーが発生しました: {str(e)}")
+        return False, f"予期せぬエラーが発生しました: {str(e)}"
+
 # 選択肢の定義
 INDUSTRIES = [
     "IT・テクノロジー",
@@ -259,7 +246,6 @@ WORK_TYPES = [
     "オンライン",
     "ハイブリッド"
 ]
-    
 
 # 24時間（30分単位）の時間リストを生成
 def generate_time_list():
