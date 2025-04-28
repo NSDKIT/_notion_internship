@@ -1,5 +1,5 @@
 import streamlit as st
-from datetime import datetime
+from datetime import datetime, time
 import pyperclip
 
 # ページ設定
@@ -97,6 +97,38 @@ WORK_TYPES = [
     "ハイブリッド"
 ]
 
+# 24時間（30分単位）の時間リストを生成
+def generate_time_list():
+    times = []
+    for hour in range(24):
+        for minute in [0, 30]:
+            time_str = f"{hour:02d}:{minute:02d}"
+            times.append(time_str)
+    return times
+
+TIMES = generate_time_list()
+
+WORKING_DAYS = [
+    "週1日",
+    "週2日",
+    "週3日",
+    "週4日",
+    "週5日",
+    "週1日〜",
+    "週2日〜",
+    "週3日〜",
+    "週4日〜",
+    "週5日〜",
+    "その他"
+]
+
+TRANSPORTATION_FEES = [
+    "支給なし",
+    "一部支給",
+    "全額支給",
+    "その他"
+]
+
 PERIODS = [
     "1日",
     "2日",
@@ -155,9 +187,10 @@ SELECTION_PROCESS = [
 ]
 
 def generate_intern_info(company, industry, work_type, location, nearest_station, period, position, grade, salary, 
-                        transportation_fee, working_hours, working_days, working_time_per_week, skills, required_skills,
+                        transportation_fee, start_time, end_time, working_days, working_time_per_week, skills, required_skills,
                         selection_process, deadline, start_date, capacity):
     intern_name = f"{company} {position}インターンシップ"
+    working_hours = f"{start_time}〜{end_time}" if start_time != "フレックス制" and end_time != "フレックス制" else "フレックス制"
     description = f"""
 【募集要項】
 募集職種
@@ -293,14 +326,18 @@ def main():
         period = st.selectbox("インターン期間", PERIODS)
         position = st.selectbox("インターン職種", POSITIONS)
         grade = st.selectbox("募集対象", GRADES)
-        salary = st.text_input("報酬", placeholder="例: 時給1,700円〜（試用期間中は1,200円となります）")
-        transportation_fee = st.text_input("交通費", placeholder="例: 支給")
+        salary = st.number_input("報酬（時給）", min_value=0, step=100, value=1000)
+        transportation_fee = st.selectbox("交通費", TRANSPORTATION_FEES)
     
     with col2:
         st.markdown("### 詳細情報")
-        working_hours = st.text_input("勤務可能時間", placeholder="例: 09:30〜20:00")
-        working_days = st.text_input("勤務日数", placeholder="例: 週2日〜")
-        working_time_per_week = st.text_input("勤務時間", placeholder="例: 週15時間〜")
+        col_start, col_end = st.columns(2)
+        with col_start:
+            start_time = st.selectbox("開始時間", TIMES)
+        with col_end:
+            end_time = st.selectbox("終了時間", TIMES)
+        working_days = st.selectbox("勤務日数", WORKING_DAYS)
+        working_time_per_week = st.number_input("勤務時間（週）", min_value=0, step=1, value=15)
         selection_process = st.selectbox("選考フロー", SELECTION_PROCESS)
         deadline = st.date_input("応募締切日")
         start_date = st.date_input("インターン開始予定日")
@@ -313,7 +350,7 @@ def main():
         if company and location and required_skills:
             info = generate_intern_info(
                 company, industry, work_type, location, nearest_station, period, position, grade,
-                salary, transportation_fee, working_hours, working_days, working_time_per_week,
+                f"時給{salary}円", transportation_fee, start_time, end_time, working_days, f"週{working_time_per_week}時間",
                 skills, required_skills, selection_process, deadline.strftime("%Y-%m-%d"),
                 start_date.strftime("%Y-%m-%d"), str(capacity)
             )
