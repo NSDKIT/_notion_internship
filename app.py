@@ -15,10 +15,17 @@ else:
     NOTION_DATABASE_ID = st.secrets.get("NOTION_DATABASE_ID")
 
 # Notionクライアントの初期化
-if NOTION_TOKEN:
-    notion = Client(auth=NOTION_TOKEN)
-else:
-    notion = None
+def get_notion_client():
+    if NOTION_TOKEN:
+        try:
+            return Client(auth=NOTION_TOKEN)
+        except Exception as e:
+            st.error(f"Notionクライアントの初期化に失敗しました: {str(e)}")
+            return None
+    return None
+
+# グローバル変数としてnotionクライアントを初期化
+notion = get_notion_client()
 
 # カスタムCSSの追加
 st.markdown("""
@@ -201,6 +208,10 @@ def create_notion_page(info):
             st.error("⚠️ Notionの設定が完了していません。Streamlit SecretsにNOTION_TOKENとNOTION_DATABASE_IDを設定してください。")
             return None
             
+        if not notion:
+            st.error("⚠️ Notionクライアントの初期化に失敗しました。")
+            return None
+            
         # データベースIDをシークレットから取得
         database_id = NOTION_DATABASE_ID
         
@@ -338,6 +349,8 @@ def main():
             if st.checkbox("Notionに投稿する"):
                 if not NOTION_TOKEN or not NOTION_DATABASE_ID:
                     st.error("⚠️ Notionの設定が完了していません。Streamlit SecretsにNOTION_TOKENとNOTION_DATABASE_IDを設定してください。")
+                elif not notion:
+                    st.error("⚠️ Notionクライアントの初期化に失敗しました。")
                 else:
                     page_url = create_notion_page(info)
                     if page_url:
