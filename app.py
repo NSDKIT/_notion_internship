@@ -1,6 +1,5 @@
 import streamlit as st
 from datetime import datetime, time
-import pyperclip
 
 # ページ設定
 st.set_page_config(
@@ -314,7 +313,7 @@ def main():
         1. 各項目を入力・選択
         2. 「インターン情報を生成」ボタンをクリック
         3. 生成された情報を確認
-        4. 「全てをコピー」ボタンで情報をコピー
+        4. テキストを選択してコピー
         """)
     
     # メインコンテンツ
@@ -376,7 +375,8 @@ def main():
             st.markdown("### 生成されたインターン情報")
             
             # コピー可能なテキストエリア
-            st.text_area("コピー用テキスト", info['説明'], height=300, key="copy_text")
+            st.markdown("**以下のテキストを選択してコピーしてください：**")
+            st.code(info['説明'], language="text")
             
             # プレビュー表示
             st.markdown(f"""
@@ -386,16 +386,6 @@ def main():
             """, unsafe_allow_html=True)
         else:
             st.error("⚠️ 必須項目（企業名、勤務地、必須スキル）を入力してください。")
-    
-    # コピーボタン（セッション状態に情報がある場合のみ表示）
-    if st.session_state.info:
-        if st.button("全てをコピー"):
-            try:
-                pyperclip.copy(st.session_state.info['説明'])
-                st.success("✅ クリップボードにコピーしました！")
-            except Exception as e:
-                st.warning("⚠️ 自動コピーに失敗しました。上記のテキストを手動でコピーしてください。")
-                st.error(f"エラー詳細: {str(e)}")
 
 if __name__ == "__main__":
     main() 
