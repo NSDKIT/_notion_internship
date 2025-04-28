@@ -384,7 +384,10 @@ def main():
             st.success("🎉 インターン情報が生成されました！")
             
             # Notionに投稿するかどうかを選択
-            if st.checkbox("Notionに投稿する"):
+            post_to_notion = st.checkbox("Notionに投稿する")
+            st.write(f"デバッグ: Notionに投稿するのチェックボックス状態: {post_to_notion}")
+            
+            if post_to_notion:
                 st.write("デバッグ: Notionに投稿するが選択されました")
                 if not NOTION_TOKEN or not NOTION_DATABASE_ID:
                     st.error("⚠️ Notionの設定が完了していません。Streamlit SecretsにNOTION_TOKENとNOTION_DATABASE_IDを設定してください。")
@@ -394,6 +397,7 @@ def main():
                     st.error("⚠️ Notionクライアントの初期化に失敗しました。")
                 else:
                     st.write("デバッグ: Notionページの作成を開始します")
+                    st.write(f"デバッグ: infoの内容: {info}")
                     page_url = create_notion_page(info)
                     if page_url:
                         st.success(f"✅ Notionに投稿しました！ [ページを開く]({page_url})")
