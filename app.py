@@ -29,14 +29,6 @@ st.write("デバッグ情報:")
 st.write(f"NOTION_TOKEN exists: {'NOTION_TOKEN' in st.secrets}")
 st.write(f"NOTION_DATABASE_ID exists: {'NOTION_DATABASE_ID' in st.secrets}")
 
-# セッション状態の初期化
-if 'notion_checkbox' not in st.session_state:
-    st.session_state.notion_checkbox = False
-if 'generate_button' not in st.session_state:
-    st.session_state.generate_button = False
-if 'info' not in st.session_state:
-    st.session_state.info = None
-
 # ローカル開発環境用の設定
 if os.path.exists(".env"):
     load_dotenv()
@@ -341,6 +333,16 @@ def create_notion_page(info):
 def main():
     st.write("デバッグ: main関数が開始されました")
     
+    # セッション状態の初期化
+    if 'notion_checkbox' not in st.session_state:
+        st.session_state['notion_checkbox'] = False
+    if 'generate_button' not in st.session_state:
+        st.session_state['generate_button'] = False
+    if 'info' not in st.session_state:
+        st.session_state['info'] = None
+    
+    st.write(f"デバッグ: セッション状態の初期化完了: {st.session_state}")
+    
     # ヘッダー
     st.markdown("""
     <div style='text-align: center; margin-bottom: 30px;'>
@@ -410,7 +412,8 @@ def main():
             )
             
             # 生成された情報をセッション状態に保存
-            st.session_state.info = info
+            st.session_state['info'] = info
+            st.write(f"デバッグ: セッション状態に情報を保存しました: {st.session_state['info']}")
             
             st.success("🎉 インターン情報が生成されました！")
             
@@ -422,8 +425,8 @@ def main():
             st.write(f"セッション状態: {st.session_state.get('notion_checkbox')}")
             
             # チェックボックスの状態をセッション状態に保存
-            st.session_state.notion_checkbox = post_to_notion
-            st.write(f"デバッグ: セッション状態にチェックボックスの状態を保存しました: {st.session_state.notion_checkbox}")
+            st.session_state['notion_checkbox'] = post_to_notion
+            st.write(f"デバッグ: セッション状態にチェックボックスの状態を保存しました: {st.session_state['notion_checkbox']}")
             
             if post_to_notion:
                 st.write("デバッグ: Notionに投稿するが選択されました")
@@ -451,14 +454,17 @@ def main():
     
     # セッション状態に保存された情報がある場合は表示
     if st.session_state.get('info'):
+        st.write("デバッグ: セッション状態に保存された情報を表示します")
         st.markdown("### 保存されたインターン情報")
-        for k, v in st.session_state.info.items():
+        for k, v in st.session_state['info'].items():
             st.markdown(f"""
             <div style='background-color: white; padding: 15px; border-radius: 10px; margin-bottom: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);'>
                 <strong style='color: #2c3e50;'>{k}:</strong>
                 <p style='color: #34495e; margin-top: 5px;'>{v}</p>
             </div>
             """, unsafe_allow_html=True)
+    else:
+        st.write("デバッグ: セッション状態に保存された情報はありません")
 
 if __name__ == "__main__":
     main() 
