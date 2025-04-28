@@ -252,10 +252,8 @@ def main():
                 </div>
                 """, unsafe_allow_html=True)
             
-            # コピーボタン
-            if st.button("全てをコピー"):
-                # 情報を整形してコピー
-                copy_text = f"""【{info['インターン名']}】
+            # コピー用のテキストを表示
+            copy_text = f"""【{info['インターン名']}】
 
 {info['説明']}
 
@@ -273,9 +271,18 @@ def main():
 ・募集人数: {info['募集人数']}名
 ・必要なスキル・経験:
 {info['必要なスキル・経験']}"""
-                
-                pyperclip.copy(copy_text)
-                st.success("✅ クリップボードにコピーしました！")
+            
+            st.markdown("### コピー用テキスト")
+            st.code(copy_text, language="text")
+            
+            # コピーボタン
+            if st.button("全てをコピー"):
+                try:
+                    pyperclip.copy(copy_text)
+                    st.success("✅ クリップボードにコピーしました！")
+                except Exception as e:
+                    st.warning("⚠️ 自動コピーに失敗しました。上記のテキストを手動でコピーしてください。")
+                    st.error(f"エラー詳細: {str(e)}")
         else:
             st.error("⚠️ 必須項目（企業名、勤務地、必要なスキル・経験）を入力してください。")
 
