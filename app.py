@@ -192,74 +192,66 @@ def generate_intern_info(company, industry, work_type, location, nearest_station
     working_hours = f"{start_time}〜{end_time}" if start_time != "フレックス制" and end_time != "フレックス制" else "フレックス制"
     description = f"""
 【募集要項】
-募集職種
+### 募集職種
 {position}
 
-雇用形態
+### 雇用形態
 アルバイト
 
-給与
+### 給与
 {salary}
 
-交通費
+### 交通費
 {transportation_fee}
 
-勤務地
+### 勤務地
 {location}
 
-最寄り駅
+### 最寄り駅
 {nearest_station}
 
-勤務可能時間
+### 勤務可能時間
 {working_hours}
 
-勤務日数
+### 勤務日数
 {working_days}
 
-勤務時間
+### 勤務時間
 {working_time_per_week}
 
-勤務期間
+### 勤務期間
 {period}
 
-業界
+### 業界
 {industry}
 
-業種
+### 業種
 {position}
 
-形式
+### 形式
 {work_type}
 
-【応募条件】
-※注意事項※
-この度は弊社長期インターンにご関心をお寄せいただき、誠にありがとうございます。
-ご応募に際し、以下の点についてご確認をお願いいたします。
-
-①過去に弊社長期インターンへご応募いただいた方は、再応募をご遠慮いただいております。
-②複数ポジションへの同時応募はできませんので、希望するポジションを一つ選んでご応募ください。
-
-【勤務時間】
+### 勤務時間
 ・期間：{start_date}〜{period}以上勤務できる方
 ・稼働時間：{working_time_per_week}以上勤務できる方
 ・勤務時間：{working_hours}内（土日祝日を除く）
 
-【応募条件】
+### 応募条件
 ・{grade}大歓迎！
 
-【必須スキル】
+### 必須スキル
 {required_skills}
 
-【歓迎スキル】
+### 歓迎スキル
 {skills}
 
-【選考フロー】
+### 選考フロー
 {selection_process}
 
-【応募締切】
+### 応募締切
 {deadline}
 
-【募集人数】
+### 募集人数
 {capacity}名
 """
     return {
@@ -328,7 +320,10 @@ def main():
         nearest_station = st.text_input("最寄り駅", placeholder="例: JR山手線・埼京線、東急東横線・田園都市線、京王井の頭線、地下鉄銀座線・半蔵門線の渋谷駅より徒歩1分")
         period = st.selectbox("インターン期間", PERIODS)
         position = st.selectbox("インターン職種", POSITIONS)
-        grade = st.selectbox("募集対象", GRADES)
+        grade = st.multiselect("募集対象", GRADES)
+        if "その他" in grade:
+            other_grade = st.text_input("募集対象（その他）", placeholder="例: 社会人")
+            grade = [g for g in grade if g != "その他"] + [other_grade]
         salary = st.number_input("報酬（時給）", min_value=0, step=100, value=1000)
         transportation_fee = st.selectbox("交通費", TRANSPORTATION_FEES)
         if transportation_fee == "その他":
@@ -359,8 +354,11 @@ def main():
     # 生成ボタン
     if st.button("インターン情報を生成"):
         if company and location and required_skills:
+            # 募集対象を文字列に変換
+            grade_text = "、".join(grade)
+            
             info = generate_intern_info(
-                company, industry, work_type, location, nearest_station, period, position, grade,
+                company, industry, work_type, location, nearest_station, period, position, grade_text,
                 f"時給{salary}円", transportation_fee, start_time, end_time, working_days, f"週{working_time_per_week}時間",
                 skills, required_skills, selection_process, deadline.strftime("%Y-%m-%d"),
                 start_date.strftime("%Y-%m-%d"), str(capacity)
@@ -373,17 +371,7 @@ def main():
             
             # 結果を表示
             st.markdown("### 生成されたインターン情報")
-            
-            # コピー可能なテキストエリア
-            st.markdown("**以下のテキストを選択してコピーしてください：**")
             st.code(info['説明'], language="text")
-            
-            # プレビュー表示
-            st.markdown(f"""
-            <div style='background-color: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);'>
-                <pre style='white-space: pre-wrap;'>{info['説明']}</pre>
-            </div>
-            """, unsafe_allow_html=True)
         else:
             st.error("⚠️ 必須項目（企業名、勤務地、必須スキル）を入力してください。")
 
