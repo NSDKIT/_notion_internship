@@ -1,15 +1,6 @@
 import streamlit as st
 from datetime import datetime, time
-from notion_client import Client
 import os
-from dotenv import load_dotenv
-from notion_config import create_notion_page, is_notion_configured
-
-# .envファイルから環境変数を読み込む
-load_dotenv()
-
-# Notionクライアントの初期化
-notion = Client(auth=os.getenv("NOTION_TOKEN"))
 
 # ページ設定
 st.set_page_config(
@@ -288,60 +279,6 @@ def generate_intern_info(company, industry, work_type, location, nearest_station
         "歓迎スキル": skills
     }
 
-def create_notion_page(info):
-    """Notionにページを作成する関数"""
-    try:
-        # デバッグ情報の表示
-        st.write("Notion Token:", os.getenv("NOTION_TOKEN")[:10] + "...")
-        st.write("Database ID:", os.getenv("NOTION_DATABASE_ID"))
-        
-        # ページのプロパティを設定
-        properties = {
-            "Name": {"title": [{"text": {"content": info["インターン名"]}}]},  # タイトルプロパティの名前を修正
-            "企業名": {"rich_text": [{"text": {"content": info["企業名"]}}]},
-            "業界": {"select": {"name": info["業界"]}},
-            "形式": {"select": {"name": info["形式"]}},
-            "勤務地": {"rich_text": [{"text": {"content": info["勤務地"]}}]},
-            "最寄り駅": {"rich_text": [{"text": {"content": info["最寄り駅"]}}]},
-            "期間": {"select": {"name": info["期間"]}},
-            "職種": {"select": {"name": info["職種"]}},
-            "募集対象": {"rich_text": [{"text": {"content": info["募集対象"]}}]},
-            "報酬": {"rich_text": [{"text": {"content": info["報酬"]}}]},
-            "交通費": {"rich_text": [{"text": {"content": info["交通費"]}}]},
-            "勤務可能時間": {"rich_text": [{"text": {"content": info["勤務可能時間"]}}]},
-            "勤務日数": {"rich_text": [{"text": {"content": info["勤務日数"]}}]},
-            "勤務時間": {"rich_text": [{"text": {"content": info["勤務時間"]}}]},
-            "選考フロー": {"rich_text": [{"text": {"content": info["選考フロー"]}}]},
-            "応募締切": {"date": {"start": info["応募締切"]}},
-            "開始予定日": {"date": {"start": info["開始予定日"]}},
-            "募集人数": {"number": int(info["募集人数"])},
-            "必須スキル": {"rich_text": [{"text": {"content": info["必須スキル"]}}]},
-            "歓迎スキル": {"rich_text": [{"text": {"content": info["歓迎スキル"]}}]},
-        }
-
-        # ページのコンテンツを設定
-        children = [
-            {
-                "object": "block",
-                "type": "paragraph",
-                "paragraph": {
-                    "rich_text": [{"type": "text", "text": {"content": info["説明"]}}]
-                }
-            }
-        ]
-
-        # Notionにページを作成
-        new_page = notion.pages.create(
-            parent={"database_id": os.getenv("NOTION_DATABASE_ID")},
-            properties=properties,
-            children=children
-        )
-        
-        return True, new_page["url"]
-    except Exception as e:
-        st.error(f"エラーの詳細: {str(e)}")
-        return False, str(e)
-
 def main():
     # セッション状態の初期化
     if 'info' not in st.session_state:
@@ -370,17 +307,7 @@ def main():
         2. 「インターン情報を生成」ボタンをクリック
         3. 生成された情報を確認
         4. テキストを選択してコピー
-        5. Notionに送信（オプション）
         """)
-        
-        # Notion設定
-        st.markdown("### Notion設定")
-        notion_token = st.text_input("Notion Token", type="password", value=os.getenv("NOTION_TOKEN", ""))
-        notion_database_id = st.text_input("Notion Database ID", value=os.getenv("NOTION_DATABASE_ID", ""))
-        
-        if notion_token and notion_database_id:
-            os.environ["NOTION_TOKEN"] = notion_token
-            os.environ["NOTION_DATABASE_ID"] = notion_database_id
     
     # メインコンテンツ
     col1, col2 = st.columns(2)
@@ -446,19 +373,6 @@ def main():
             # 結果を表示
             st.markdown("### 生成されたインターン情報")
             st.code(info['説明'], language="text")
-            
-            # Notionに送信するかどうかのチェックボックス
-            if os.getenv("NOTION_TOKEN") and os.getenv("NOTION_DATABASE_ID"):
-                st.write("Notion設定が完了しています")
-                if st.checkbox("Notionに送信する"):
-                    with st.spinner("Notionに送信中..."):
-                        success, result = create_notion_page(info)
-                        if success:
-                            st.success(f"✅ Notionに送信しました！\n[ページを開く]({result})")
-                        else:
-                            st.error(f"⚠️ Notionへの送信に失敗しました: {result}")
-            else:
-                st.warning("⚠️ Notion設定が完了していません。サイドバーで設定を行ってください。")
         else:
             st.error("⚠️ 必須項目（企業名、勤務地、必須スキル）を入力してください。")
 
