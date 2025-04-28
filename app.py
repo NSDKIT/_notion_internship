@@ -97,13 +97,48 @@ def get_google_sheets_service():
 def save_to_sheets(info):
     """Googleスプレッドシートに情報を保存する関数"""
     try:
+        # デバッグ情報
+        st.write("デバッグ情報:")
+        st.write(f"利用可能なシークレットキー: {list(st.secrets.keys())}")
+        
+        if "gcp_service_account" in st.secrets:
+            st.write("gcp_service_accountの中のキー:")
+            for key in st.secrets["gcp_service_account"]:
+                # プライベートキーなどの機密情報は表示しない
+                if key == "private_key":
+                    st.write(f"- private_key: (存在します)")
+                else:
+                    st.write(f"- {key}")
+        
         # TOMLファイルの階層構造の問題を回避する代替コード
         try:
             # 直接スプレッドシートIDを取得してみる
             spreadsheet_id = st.secrets.get("SPREADSHEET_ID", None)
+            if spreadsheet_id:
+                st.write(f"SPREADSHEET_ID直接アクセス: あり")
+            else:
+                st.write("SPREADSHEET_ID直接アクセス: なし")
+                
+                # gcp_service_accountの中から探す
+                if "gcp_service_account" in st.secrets and "SPREADSHEET_ID" in st.secrets["gcp_service_account"]:
+                    spreadsheet_id = st.secrets["gcp_service_account"]["SPREADSHEET_ID"]
+                    st.write("gcp_service_accountの中にSPREADSHEET_IDがあります")
+                else:
+                    # ハードコードバックアップ (テスト用)
+                    spreadsheet_id = "1SsUwD9XsadcfaxsefaMu49lx72iQxaefdaefA7KzvM"
+                    st.write("ハードコードされたSPREADSHEET_IDを使用します")
+            
             # シート名も同様に
             sheet_name = st.secrets.get("SHEET_NAME", None)
-            
+            if not sheet_name:
+                if "gcp_service_account" in st.secrets and "SHEET_NAME" in st.secrets["gcp_service_account"]:
+                    sheet_name = st.secrets["gcp_service_account"]["SHEET_NAME"]
+                else:
+                    sheet_name = "info"
+                    
+            st.write(f"使用するスプレッドシートID: {spreadsheet_id[:5]}...{spreadsheet_id[-5:]}")
+            st.write(f"使用するシート名: {sheet_name}")
+                    
             service = get_google_sheets_service()
             if not service:
                 return False, "Google認証に失敗しました"
