@@ -91,6 +91,12 @@ INDUSTRIES = [
     "その他"
 ]
 
+WORK_TYPES = [
+    "対面",
+    "オンライン",
+    "ハイブリッド"
+]
+
 PERIODS = [
     "1日",
     "2日",
@@ -148,8 +154,9 @@ SELECTION_PROCESS = [
     "その他"
 ]
 
-def generate_intern_info(company, industry, location, period, position, grade, salary, 
-                        selection_process, deadline, start_date, capacity, skills):
+def generate_intern_info(company, industry, work_type, location, nearest_station, period, position, grade, salary, 
+                        transportation_fee, working_hours, working_days, working_time_per_week, skills, required_skills,
+                        selection_process, deadline, start_date, capacity):
     intern_name = f"{company} {position}インターンシップ"
     description = f"""
 【募集要項】
@@ -162,20 +169,35 @@ def generate_intern_info(company, industry, location, period, position, grade, s
 給与
 {salary}
 
+交通費
+{transportation_fee}
+
 勤務地
 {location}
 
+最寄り駅
+{nearest_station}
+
 勤務可能時間
-09:30〜20:00
+{working_hours}
 
 勤務日数
-週2日〜
+{working_days}
 
 勤務時間
-週15時間〜
+{working_time_per_week}
 
 勤務期間
 {period}
+
+業界
+{industry}
+
+業種
+{position}
+
+形式
+{work_type}
 
 【応募条件】
 ※注意事項※
@@ -187,13 +209,16 @@ def generate_intern_info(company, industry, location, period, position, grade, s
 
 【勤務時間】
 ・期間：{start_date}〜{period}以上勤務できる方
-・稼働時間：15時間/週以上勤務できる方
-・勤務時間：平日9:30〜20:00内（土日祝日を除く）
+・稼働時間：{working_time_per_week}以上勤務できる方
+・勤務時間：{working_hours}内（土日祝日を除く）
 
 【応募条件】
 ・{grade}大歓迎！
 
 【必須スキル】
+{required_skills}
+
+【歓迎スキル】
 {skills}
 
 【選考フロー】
@@ -211,15 +236,22 @@ def generate_intern_info(company, industry, location, period, position, grade, s
         "期間": period,
         "企業名": company,
         "業界": industry,
+        "形式": work_type,
         "勤務地": location,
+        "最寄り駅": nearest_station,
         "職種": position,
         "募集対象": grade,
         "報酬": salary,
+        "交通費": transportation_fee,
+        "勤務可能時間": working_hours,
+        "勤務日数": working_days,
+        "勤務時間": working_time_per_week,
         "選考フロー": selection_process,
         "応募締切": deadline,
         "開始予定日": start_date,
         "募集人数": capacity,
-        "必要なスキル・経験": skills
+        "必須スキル": required_skills,
+        "歓迎スキル": skills
     }
 
 def main():
@@ -255,27 +287,35 @@ def main():
         st.markdown("### 基本情報")
         company = st.text_input("企業名", placeholder="例: 株式会社〇〇")
         industry = st.selectbox("業界", INDUSTRIES)
+        work_type = st.selectbox("形式", WORK_TYPES)
         location = st.text_input("勤務地", placeholder="例: 東京都渋谷区道玄坂1-2-3 渋谷フクラス")
+        nearest_station = st.text_input("最寄り駅", placeholder="例: JR山手線・埼京線、東急東横線・田園都市線、京王井の頭線、地下鉄銀座線・半蔵門線の渋谷駅より徒歩1分")
         period = st.selectbox("インターン期間", PERIODS)
         position = st.selectbox("インターン職種", POSITIONS)
         grade = st.selectbox("募集対象", GRADES)
+        salary = st.text_input("報酬", placeholder="例: 時給1,700円〜（試用期間中は1,200円となります）")
+        transportation_fee = st.text_input("交通費", placeholder="例: 支給")
     
     with col2:
         st.markdown("### 詳細情報")
-        salary = st.text_input("報酬", placeholder="例: 時給1,700円〜（試用期間中は1,200円となります）")
+        working_hours = st.text_input("勤務可能時間", placeholder="例: 09:30〜20:00")
+        working_days = st.text_input("勤務日数", placeholder="例: 週2日〜")
+        working_time_per_week = st.text_input("勤務時間", placeholder="例: 週15時間〜")
         selection_process = st.selectbox("選考フロー", SELECTION_PROCESS)
         deadline = st.date_input("応募締切日")
         start_date = st.date_input("インターン開始予定日")
         capacity = st.number_input("募集人数", min_value=1, step=1)
-        skills = st.text_area("必要なスキル・経験", placeholder="例:\n【必須スキル】\n・Webアプリケーションの開発経験\n\n【歓迎スキル】\n・Ruby on Railsを用いたWebアプリケーションの開発経験\n・WordPressのカスタマイズ経験\n・MySQLなどのRDBMSを用いたWebアプリケーション開発\n・GitHubを用いたチーム開発の経験", height=200)
+        required_skills = st.text_area("必須スキル", placeholder="例:\n・Webアプリケーションの開発経験\n・コミュニケーション能力", height=100)
+        skills = st.text_area("歓迎スキル", placeholder="例:\n・Ruby on Railsを用いたWebアプリケーションの開発経験\n・WordPressのカスタマイズ経験\n・MySQLなどのRDBMSを用いたWebアプリケーション開発\n・GitHubを用いたチーム開発の経験", height=100)
     
     # 生成ボタン
     if st.button("インターン情報を生成"):
-        if company and location and skills:
+        if company and location and required_skills:
             info = generate_intern_info(
-                company, industry, location, period, position, grade,
-                salary, selection_process, deadline.strftime("%Y-%m-%d"),
-                start_date.strftime("%Y-%m-%d"), str(capacity), skills
+                company, industry, work_type, location, nearest_station, period, position, grade,
+                salary, transportation_fee, working_hours, working_days, working_time_per_week,
+                skills, required_skills, selection_process, deadline.strftime("%Y-%m-%d"),
+                start_date.strftime("%Y-%m-%d"), str(capacity)
             )
             
             st.success("🎉 インターン情報が生成されました！")
@@ -297,7 +337,7 @@ def main():
                     st.warning("⚠️ 自動コピーに失敗しました。上記のテキストを手動でコピーしてください。")
                     st.error(f"エラー詳細: {str(e)}")
         else:
-            st.error("⚠️ 必須項目（企業名、勤務地、必要なスキル・経験）を入力してください。")
+            st.error("⚠️ 必須項目（企業名、勤務地、必須スキル）を入力してください。")
 
 if __name__ == "__main__":
     main() 
