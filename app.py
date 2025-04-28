@@ -288,6 +288,10 @@ def generate_intern_info(company, industry, work_type, location, nearest_station
     }
 
 def main():
+    # セッション状態の初期化
+    if 'info' not in st.session_state:
+        st.session_state.info = None
+    
     # ヘッダー
     st.markdown("""
     <div style='text-align: center; margin-bottom: 30px;'>
@@ -363,16 +367,10 @@ def main():
                 start_date.strftime("%Y-%m-%d"), str(capacity)
             )
             
-            st.success("🎉 インターン情報が生成されました！")
+            # セッション状態に情報を保存
+            st.session_state.info = info
             
-            # コピーボタン
-            if st.button("全てをコピー"):
-                try:
-                    pyperclip.copy(info['説明'])
-                    st.success("✅ クリップボードにコピーしました！")
-                except Exception as e:
-                    st.warning("⚠️ 自動コピーに失敗しました。上記のテキストを手動でコピーしてください。")
-                    st.error(f"エラー詳細: {str(e)}")
+            st.success("🎉 インターン情報が生成されました！")
             
             # 結果を表示
             st.markdown("### 生成されたインターン情報")
@@ -388,6 +386,16 @@ def main():
             """, unsafe_allow_html=True)
         else:
             st.error("⚠️ 必須項目（企業名、勤務地、必須スキル）を入力してください。")
+    
+    # コピーボタン（セッション状態に情報がある場合のみ表示）
+    if st.session_state.info:
+        if st.button("全てをコピー"):
+            try:
+                pyperclip.copy(st.session_state.info['説明'])
+                st.success("✅ クリップボードにコピーしました！")
+            except Exception as e:
+                st.warning("⚠️ 自動コピーに失敗しました。上記のテキストを手動でコピーしてください。")
+                st.error(f"エラー詳細: {str(e)}")
 
 if __name__ == "__main__":
     main() 
