@@ -503,10 +503,6 @@ def main():
     
     # 生成された情報がある場合に表示
     if st.session_state.info_generated and st.session_state.info:
-        # 結果を表示
-        st.markdown("###### 生成されたインターン情報")
-        st.code(st.session_state.info['説明'], language="text")
-        
         # Googleスプレッドシートへの保存オプション
         st.markdown("###### Googleスプレッドシートへの保存")
         
@@ -531,6 +527,10 @@ def main():
                     except Exception as e:
                         st.error(f"⚠️ エラーが発生しました: {str(e)}")
                         st.write(f"エラー詳細: {str(e)}")
+
+        # 結果を表示
+        st.markdown("###### 生成されたインターン情報")
+        st.code(st.session_state.info['説明'], language="text")
 
 if __name__ == "__main__":
     main()
