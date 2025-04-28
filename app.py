@@ -4,6 +4,11 @@ from notion_client import Client
 import os
 from dotenv import load_dotenv
 
+# デバッグ情報の表示
+st.write("デバッグ情報:")
+st.write(f"NOTION_TOKEN exists: {'NOTION_TOKEN' in st.secrets}")
+st.write(f"NOTION_DATABASE_ID exists: {'NOTION_DATABASE_ID' in st.secrets}")
+
 # ローカル開発環境用の設定
 if os.path.exists(".env"):
     load_dotenv()
@@ -14,11 +19,17 @@ else:
     NOTION_TOKEN = st.secrets.get("NOTION_TOKEN")
     NOTION_DATABASE_ID = st.secrets.get("NOTION_DATABASE_ID")
 
+# デバッグ情報の表示
+st.write(f"NOTION_TOKEN value: {NOTION_TOKEN is not None}")
+st.write(f"NOTION_DATABASE_ID value: {NOTION_DATABASE_ID is not None}")
+
 # Notionクライアントの初期化
 def get_notion_client():
     if NOTION_TOKEN:
         try:
-            return Client(auth=NOTION_TOKEN)
+            client = Client(auth=NOTION_TOKEN)
+            st.write("Notionクライアントの初期化に成功しました")
+            return client
         except Exception as e:
             st.error(f"Notionクライアントの初期化に失敗しました: {str(e)}")
             return None
@@ -347,14 +358,20 @@ def main():
             
             # Notionに投稿するかどうかを選択
             if st.checkbox("Notionに投稿する"):
+                st.write("デバッグ: Notionに投稿するが選択されました")
                 if not NOTION_TOKEN or not NOTION_DATABASE_ID:
                     st.error("⚠️ Notionの設定が完了していません。Streamlit SecretsにNOTION_TOKENとNOTION_DATABASE_IDを設定してください。")
+                    st.write(f"NOTION_TOKEN: {NOTION_TOKEN is not None}")
+                    st.write(f"NOTION_DATABASE_ID: {NOTION_DATABASE_ID is not None}")
                 elif not notion:
                     st.error("⚠️ Notionクライアントの初期化に失敗しました。")
                 else:
+                    st.write("デバッグ: Notionページの作成を開始します")
                     page_url = create_notion_page(info)
                     if page_url:
                         st.success(f"✅ Notionに投稿しました！ [ページを開く]({page_url})")
+                    else:
+                        st.error("⚠️ Notionページの作成に失敗しました")
             
             # 結果を表示
             st.markdown("### 生成されたインターン情報")
