@@ -321,12 +321,17 @@ def main():
             st.success("🎉 インターン情報が生成されました！")
             
             # Notionに投稿するかどうかを選択
-            if "NOTION_TOKEN" in st.secrets and "NOTION_DATABASE_ID" in st.secrets:
-                page_url = create_notion_page(info)
-                if page_url:
-                    st.success(f"✅ Notionに投稿しました！ [ページを開く]({page_url})")
-            else:
-                st.error("⚠️ Notionの設定が完了していません。Streamlit SecretsにNOTION_TOKENとNOTION_DATABASE_IDを設定してください。")
+            if st.checkbox("Notionに投稿する"):
+                try:
+                    # シークレットの存在チェック
+                    if not st.secrets.get("NOTION_TOKEN") or not st.secrets.get("NOTION_DATABASE_ID"):
+                        st.error("⚠️ Notionの設定が完了していません。Streamlit SecretsにNOTION_TOKENとNOTION_DATABASE_IDを設定してください。")
+                    else:
+                        page_url = create_notion_page(info)
+                        if page_url:
+                            st.success(f"✅ Notionに投稿しました！ [ページを開く]({page_url})")
+                except Exception as e:
+                    st.error(f"⚠️ Notionの設定に問題があります: {str(e)}")
             
             # 結果を表示
             st.markdown("### 生成されたインターン情報")
