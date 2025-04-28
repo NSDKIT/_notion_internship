@@ -344,66 +344,66 @@ def generate_intern_info(company, industry, work_type, location, nearest_station
     working_hours = f"{start_time}〜{end_time}" if start_time != "フレックス制" and end_time != "フレックス制" else "フレックス制"
     description = f"""
 【募集要項】
-### 募集職種
+###### 募集職種
 {position}
 
-### 雇用形態
+###### 雇用形態
 アルバイト
 
-### 給与
+###### 給与
 {salary}
 
-### 交通費
+###### 交通費
 {transportation_fee}
 
-### 勤務地
+###### 勤務地
 {location}
 
-### 最寄り駅
+###### 最寄り駅
 {nearest_station}
 
-### 勤務可能時間
+###### 勤務可能時間
 {working_hours}
 
-### 勤務日数
+###### 勤務日数
 {working_days}
 
-### 勤務時間
+###### 勤務時間
 {working_time_per_week}
 
-### 勤務期間
+###### 勤務期間
 {period}
 
-### 業界
+###### 業界
 {industry}
 
-### 業種
+###### 業種
 {position}
 
-### 形式
+###### 形式
 {work_type}
 
-### 勤務時間
+###### 勤務時間
 ・期間：{start_date}〜{period}以上勤務できる方
 ・稼働時間：{working_time_per_week}以上勤務できる方
 ・勤務時間：{working_hours}内（土日祝日を除く）
 
-### 応募条件
+###### 応募条件
 ・{grade}大歓迎！
 
-### 必須スキル
+###### 必須スキル
 {required_skills}
 
-### 歓迎スキル
+###### 歓迎スキル
 {skills}
 
-### 選考フロー
+###### 選考フロー
 {selection_process}
 
-### 応募締切
+###### 応募締切
 {deadline}
 
-### 募集人数
+###### 募集人数
 {capacity}名
 """
     return {
@@ -468,7 +468,7 @@ def main():
     col1, col2 = st.columns(2)
     
     with col1:
-        st.markdown("### 基本情報")
+        st.markdown("###### 基本情報")
         company = st.text_input("企業名", placeholder="例: 株式会社〇〇")
         industry = st.selectbox("業界", INDUSTRIES)
         work_type = st.selectbox("形式", WORK_TYPES)
@@ -486,7 +486,7 @@ def main():
             transportation_fee = st.text_input("交通費（その他）", placeholder="例: 上限5,000円まで支給")
     
     with col2:
-        st.markdown("### 詳細情報")
+        st.markdown("###### 詳細情報")
         col_start, col_end = st.columns(2)
         with col_start:
             start_time = st.selectbox("開始時間", TIMES)
@@ -527,11 +527,11 @@ def main():
     # 生成された情報がある場合に表示
     if st.session_state.info_generated and st.session_state.info:
         # 結果を表示
-        st.markdown("### 生成されたインターン情報")
+        st.markdown("###### 生成されたインターン情報")
         st.code(st.session_state.info['説明'], language="text")
         
         # Googleスプレッドシートへの保存オプション
-        st.markdown("### Googleスプレッドシートへの保存")
+        st.markdown("###### Googleスプレッドシートへの保存")
         
         # ラジオボタンの選択状態をセッションに保存
         st.session_state.save_option = st.radio(
