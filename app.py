@@ -343,20 +343,32 @@ def main():
     with col1:
         st.markdown("### 基本情報")
         company = st.text_input("企業名", placeholder="例: 株式会社〇〇")
+        st.write(f"デバッグ: 企業名が入力されました: {company}")
         industry = st.selectbox("業界", INDUSTRIES)
+        st.write(f"デバッグ: 業界が選択されました: {industry}")
         location = st.text_input("勤務地", placeholder="例: 東京都渋谷区")
+        st.write(f"デバッグ: 勤務地が入力されました: {location}")
         period = st.selectbox("インターン期間", PERIODS)
+        st.write(f"デバッグ: インターン期間が選択されました: {period}")
         position = st.selectbox("インターン職種", POSITIONS)
+        st.write(f"デバッグ: インターン職種が選択されました: {position}")
         grade = st.selectbox("募集対象", GRADES)
+        st.write(f"デバッグ: 募集対象が選択されました: {grade}")
     
     with col2:
         st.markdown("### 詳細情報")
         salary = st.selectbox("報酬", SALARIES)
+        st.write(f"デバッグ: 報酬が選択されました: {salary}")
         selection_process = st.selectbox("選考フロー", SELECTION_PROCESS)
+        st.write(f"デバッグ: 選考フローが選択されました: {selection_process}")
         deadline = st.date_input("応募締切日")
+        st.write(f"デバッグ: 応募締切日が選択されました: {deadline}")
         start_date = st.date_input("インターン開始予定日")
+        st.write(f"デバッグ: インターン開始予定日が選択されました: {start_date}")
         capacity = st.number_input("募集人数", min_value=1, step=1)
+        st.write(f"デバッグ: 募集人数が入力されました: {capacity}")
         skills = st.text_area("必要なスキル・経験", placeholder="例:\n- Python\n- コミュニケーション能力\n- チームワーク", height=100)
+        st.write(f"デバッグ: 必要なスキル・経験が入力されました: {skills}")
     
     # 生成ボタン
     if st.button("インターン情報を生成", key="generate_button"):
