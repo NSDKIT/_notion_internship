@@ -335,11 +335,11 @@ def main():
     
     # セッション状態の初期化
     if 'notion_checkbox' not in st.session_state:
-        st.session_state.notion_checkbox = False
+        st.session_state['notion_checkbox'] = False
     if 'generate_button' not in st.session_state:
-        st.session_state.generate_button = False
+        st.session_state['generate_button'] = False
     if 'info' not in st.session_state:
-        st.session_state.info = None
+        st.session_state['info'] = None
     
     st.write(f"デバッグ: セッション状態の初期化完了: {st.session_state}")
     
@@ -412,8 +412,8 @@ def main():
             )
             
             # 生成された情報をセッション状態に保存
-            st.session_state.info = info
-            st.write(f"デバッグ: セッション状態に情報を保存しました: {st.session_state.info}")
+            st.session_state['info'] = info
+            st.write(f"デバッグ: セッション状態に情報を保存しました: {st.session_state['info']}")
             
             st.success("🎉 インターン情報が生成されました！")
             
@@ -425,8 +425,8 @@ def main():
             st.write(f"セッション状態: {st.session_state.get('notion_checkbox')}")
             
             # チェックボックスの状態をセッション状態に保存
-            st.session_state.notion_checkbox = post_to_notion
-            st.write(f"デバッグ: セッション状態にチェックボックスの状態を保存しました: {st.session_state.notion_checkbox}")
+            st.session_state['notion_checkbox'] = post_to_notion
+            st.write(f"デバッグ: セッション状態にチェックボックスの状態を保存しました: {st.session_state['notion_checkbox']}")
             
             if post_to_notion:
                 st.write("デバッグ: Notionに投稿するが選択されました")
@@ -456,7 +456,7 @@ def main():
     if st.session_state.get('info'):
         st.write("デバッグ: セッション状態に保存された情報を表示します")
         st.markdown("### 保存されたインターン情報")
-        for k, v in st.session_state.info.items():
+        for k, v in st.session_state['info'].items():
             st.markdown(f"""
             <div style='background-color: white; padding: 15px; border-radius: 10px; margin-bottom: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);'>
                 <strong style='color: #2c3e50;'>{k}:</strong>
