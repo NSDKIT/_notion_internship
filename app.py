@@ -1,5 +1,6 @@
 import streamlit as st
 from datetime import datetime
+import pyperclip
 
 # ページ設定
 st.set_page_config(
@@ -206,6 +207,7 @@ def main():
         1. 各項目を入力・選択
         2. 「インターン情報を生成」ボタンをクリック
         3. 生成された情報を確認
+        4. 「全てをコピー」ボタンで情報をコピー
         """)
     
     # メインコンテンツ
@@ -249,6 +251,31 @@ def main():
                     <p style='color: #34495e; margin-top: 5px;'>{v}</p>
                 </div>
                 """, unsafe_allow_html=True)
+            
+            # コピーボタン
+            if st.button("全てをコピー"):
+                # 情報を整形してコピー
+                copy_text = f"""【{info['インターン名']}】
+
+{info['説明']}
+
+【詳細情報】
+・企業名: {info['企業名']}
+・業界: {info['業界']}
+・勤務地: {info['勤務地']}
+・期間: {info['期間']}
+・職種: {info['職種']}
+・募集対象: {info['募集対象']}
+・報酬: {info['報酬']}
+・選考フロー: {info['選考フロー']}
+・応募締切: {info['応募締切']}
+・開始予定日: {info['開始予定日']}
+・募集人数: {info['募集人数']}名
+・必要なスキル・経験:
+{info['必要なスキル・経験']}"""
+                
+                pyperclip.copy(copy_text)
+                st.success("✅ クリップボードにコピーしました！")
         else:
             st.error("⚠️ 必須項目（企業名、勤務地、必要なスキル・経験）を入力してください。")
 
