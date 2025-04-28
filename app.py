@@ -2,28 +2,143 @@ import streamlit as st
 from datetime import datetime, time
 import os
 from dotenv import load_dotenv
+from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
-from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 import pickle
 import base64
 from email.mime.text import MIMEText
-from notion_client import Client
 
 # .envファイルから環境変数を読み込む
 load_dotenv()
 
-# Notionクライアントの初期化
-try:
-    notion = Client(auth=st.secrets["NOTION_API_KEY"])
-    DATABASE_ID = st.secrets["DATABASE_ID"]
-    NOTION_CONFIGURED = True
-except Exception as e:
-    st.error("⚠️ Notionの設定が正しくありません。管理者に連絡してください。")
-    NOTION_CONFIGURED = False
-    notion = None
-    DATABASE_ID = None
+# Google Sheets APIのスコープ
+SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
+
+def get_google_sheets_service():
+    """Google Sheets APIサービスを取得する関数"""
+    creds = None
+    # トークンファイルから認証情報を読み込む
+    if os.path.exists('token.pickle'):
+        with open('token.pickle', 'rb') as token:
+            creds = pickle.load(token)
+    
+    # 認証情報が無効な場合は更新
+    if not creds or not creds.valid:
+        if creds and creds.expired and creds.refresh_token:
+            creds.refresh(Request())
+        else:
+            # Streamlit Secretsから認証情報を取得
+            flow = InstalledAppFlow.from_client_config(
+                {
+                    "installed": {
+                        "client_id": st.secrets["GOOGLE_CLIENT_ID"],
+                        "client_secret": st.secrets["GOOGLE_CLIENT_SECRET"],
+                        "redirect_uris": [st.secrets["GOOGLE_REDIRECT_URI"]],
+                        "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+                        "token_uri": "https://oauth2.googleapis.com/token"
+                    }
+                },
+                scopes=SCOPES
+            )
+            # 認証URLを生成
+            auth_url, _ = flow.authorization_url(prompt='consent')
+            
+            # 認証が必要な場合は、サイドバーに表示
+            with st.sidebar:
+                st.warning("⚠️ Googleスプレッドシートへの保存機能を使用するには認証が必要です")
+                st.markdown(f"[認証リンク]({auth_url})")
+                code = st.text_input("認証コードを入力してください：")
+            
+            if code:
+                # 認証コードを使用してトークンを取得
+                flow.fetch_token(code=code)
+                creds = flow.credentials
+                
+                # 認証情報を保存
+                with open('token.pickle', 'wb') as token:
+                    pickle.dump(creds, token)
+                st.sidebar.success("✅ 認証が完了しました！")
+            else:
+                return None
+    
+    return build('sheets', 'v4', credentials=creds)
+
+def save_to_sheets(info):
+    """Googleスプレッドシートに情報を保存する関数"""
+    try:
+        service = get_google_sheets_service()
+        if not service:
+            return False, "Google認証が必要です"
+            
+        # スプレッドシートIDを取得
+        spreadsheet_id = st.secrets["SPREADSHEET_ID"]
+        
+        # シート名を取得
+        sheet_name = st.secrets.get("SHEET_NAME", "Sheet1")
+        
+        # ヘッダー行を準備
+        headers = [
+            "インターン名", "企業名", "業界", "形式", "勤務地", "最寄り駅",
+            "期間", "職種", "募集対象", "報酬", "交通費", "勤務可能時間",
+            "勤務日数", "勤務時間", "選考フロー", "応募締切", "開始予定日",
+            "募集人数", "必須スキル", "歓迎スキル", "説明"
+        ]
+        
+        # データ行を準備
+        values = [
+            info["インターン名"], info["企業名"], info["業界"], info["形式"],
+            info["勤務地"], info["最寄り駅"], info["期間"], info["職種"],
+            info["募集対象"], info["報酬"], info["交通費"], info["勤務可能時間"],
+            info["勤務日数"], info["勤務時間"], info["選考フロー"],
+            info["応募締切"], info["開始予定日"], info["募集人数"],
+            info["必須スキル"], info["歓迎スキル"], info["説明"]
+        ]
+        
+        # スプレッドシートに書き込む
+        body = {
+            'values': [headers, values]
+        }
+        
+        # シートが存在しない場合は作成
+        try:
+            service.spreadsheets().values().append(
+                spreadsheetId=spreadsheet_id,
+                range=f"{sheet_name}!A:U",
+                valueInputOption='RAW',
+                insertDataOption='INSERT_ROWS',
+                body=body
+            ).execute()
+        except Exception as e:
+            # シートが存在しない場合は作成して再試行
+            if "Unable to parse range" in str(e):
+                service.spreadsheets().batchUpdate(
+                    spreadsheetId=spreadsheet_id,
+                    body={
+                        'requests': [{
+                            'addSheet': {
+                                'properties': {
+                                    'title': sheet_name
+                                }
+                            }
+                        }]
+                    }
+                ).execute()
+                
+                service.spreadsheets().values().append(
+                    spreadsheetId=spreadsheet_id,
+                    range=f"{sheet_name}!A:U",
+                    valueInputOption='RAW',
+                    insertDataOption='INSERT_ROWS',
+                    body=body
+                ).execute()
+            else:
+                raise e
+        
+        return True, "スプレッドシートに保存しました"
+    except Exception as e:
+        return False, f"スプレッドシートへの保存に失敗しました: {str(e)}"
 
 # ページ設定
 st.set_page_config(
@@ -208,76 +323,6 @@ SELECTION_PROCESS = [
     "その他"
 ]
 
-# Gmail APIのスコープ
-SCOPES = ['https://www.googleapis.com/auth/gmail.send']
-
-def get_gmail_service():
-    """Gmail APIサービスを取得する関数"""
-    creds = None
-    # トークンファイルから認証情報を読み込む
-    if os.path.exists('token.pickle'):
-        with open('token.pickle', 'rb') as token:
-            creds = pickle.load(token)
-    
-    # 認証情報が無効な場合は更新
-    if not creds or not creds.valid:
-        if creds and creds.expired and creds.refresh_token:
-            creds.refresh(Request())
-        else:
-            # Streamlit Secretsから認証情報を取得
-            flow = InstalledAppFlow.from_client_config(
-                {
-                    "installed": {
-                        "client_id": st.secrets["GOOGLE_CLIENT_ID"],
-                        "client_secret": st.secrets["GOOGLE_CLIENT_SECRET"],
-                        "redirect_uris": [st.secrets["GOOGLE_REDIRECT_URI"]],
-                        "auth_uri": "https://accounts.google.com/o/oauth2/auth",
-                        "token_uri": "https://oauth2.googleapis.com/token"
-                    }
-                },
-                scopes=SCOPES
-            )
-            # 認証URLを生成
-            auth_url, _ = flow.authorization_url(prompt='consent')
-            
-            # 認証が必要な場合は、サイドバーに表示
-            with st.sidebar:
-                st.warning("⚠️ メール送信機能を使用するには認証が必要です")
-                st.markdown(f"[認証リンク]({auth_url})")
-                code = st.text_input("認証コードを入力してください：")
-            
-            if code:
-                # 認証コードを使用してトークンを取得
-                flow.fetch_token(code=code)
-                creds = flow.credentials
-                
-                # 認証情報を保存
-                with open('token.pickle', 'wb') as token:
-                    pickle.dump(creds, token)
-                st.sidebar.success("✅ 認証が完了しました！")
-            else:
-                return None
-    
-    return build('gmail', 'v1', credentials=creds)
-
-def send_email(to_email, subject, body):
-    """メールを送信する関数"""
-    try:
-        service = get_gmail_service()
-        message = MIMEText(body)
-        message['to'] = to_email
-        message['subject'] = subject
-        raw_message = base64.urlsafe_b64encode(message.as_bytes()).decode('utf-8')
-        
-        service.users().messages().send(
-            userId='me',
-            body={'raw': raw_message}
-        ).execute()
-        
-        return True, "メールが正常に送信されました"
-    except Exception as e:
-        return False, f"メールの送信に失敗しました: {str(e)}"
-
 def generate_intern_info(company, industry, work_type, location, nearest_station, period, position, grade, salary, 
                         transportation_fee, start_time, end_time, working_days, working_time_per_week, skills, required_skills,
                         selection_process, deadline, start_date, capacity):
@@ -371,58 +416,6 @@ def generate_intern_info(company, industry, work_type, location, nearest_station
         "歓迎スキル": skills
     }
 
-def create_notion_page(info):
-    """Notionにページを作成する関数"""
-    if not NOTION_CONFIGURED:
-        return False, "Notionの設定が正しくありません"
-        
-    try:
-        # ページのプロパティを設定
-        properties = {
-            "インターン名": {"title": [{"text": {"content": info["インターン名"]}}]},
-            "企業名": {"rich_text": [{"text": {"content": info["企業名"]}}]},
-            "業界": {"select": {"name": info["業界"]}},
-            "形式": {"select": {"name": info["形式"]}},
-            "勤務地": {"rich_text": [{"text": {"content": info["勤務地"]}}]},
-            "最寄り駅": {"rich_text": [{"text": {"content": info["最寄り駅"]}}]},
-            "期間": {"select": {"name": info["期間"]}},
-            "職種": {"select": {"name": info["職種"]}},
-            "募集対象": {"rich_text": [{"text": {"content": info["募集対象"]}}]},
-            "報酬": {"rich_text": [{"text": {"content": info["報酬"]}}]},
-            "交通費": {"rich_text": [{"text": {"content": info["交通費"]}}]},
-            "勤務可能時間": {"rich_text": [{"text": {"content": info["勤務可能時間"]}}]},
-            "勤務日数": {"rich_text": [{"text": {"content": info["勤務日数"]}}]},
-            "勤務時間": {"rich_text": [{"text": {"content": info["勤務時間"]}}]},
-            "選考フロー": {"rich_text": [{"text": {"content": info["選考フロー"]}}]},
-            "応募締切": {"date": {"start": info["応募締切"]}},
-            "開始予定日": {"date": {"start": info["開始予定日"]}},
-            "募集人数": {"number": int(info["募集人数"])},
-            "必須スキル": {"rich_text": [{"text": {"content": info["必須スキル"]}}]},
-            "歓迎スキル": {"rich_text": [{"text": {"content": info["歓迎スキル"]}}]},
-        }
-
-        # ページのコンテンツを設定
-        children = [
-            {
-                "object": "block",
-                "type": "paragraph",
-                "paragraph": {
-                    "rich_text": [{"type": "text", "text": {"content": info["説明"]}}]
-                }
-            }
-        ]
-
-        # Notionにページを作成
-        new_page = notion.pages.create(
-            parent={"database_id": DATABASE_ID},
-            properties=properties,
-            children=children
-        )
-        
-        return True, new_page["url"]
-    except Exception as e:
-        return False, str(e)
-
 def main():
     # セッション状態の初期化
     if 'info' not in st.session_state:
@@ -450,7 +443,7 @@ def main():
         1. 各項目を入力・選択
         2. 「インターン情報を生成」ボタンをクリック
         3. 生成された情報を確認
-        4. Notionに保存（オプション）
+        4. Googleスプレッドシートに保存（オプション）
         """)
 
     # メインコンテンツ
@@ -518,17 +511,14 @@ def main():
             st.markdown("### 生成されたインターン情報")
             st.code(info['説明'], language="text")
             
-            # Notionに保存するかどうかのチェックボックス
-            if NOTION_CONFIGURED:
-                if st.checkbox("Notionに保存する"):
-                    with st.spinner("Notionに保存中..."):
-                        success, result = create_notion_page(info)
-                        if success:
-                            st.success(f"✅ Notionに保存しました！\n[ページを開く]({result})")
-                        else:
-                            st.error(f"⚠️ Notionへの保存に失敗しました: {result}")
-            else:
-                st.warning("⚠️ Notionへの保存機能は現在利用できません。")
+            # Googleスプレッドシートに保存するかどうかのチェックボックス
+            if st.checkbox("Googleスプレッドシートに保存する"):
+                with st.spinner("スプレッドシートに保存中..."):
+                    success, result = save_to_sheets(info)
+                    if success:
+                        st.success(f"✅ {result}")
+                    else:
+                        st.error(f"⚠️ {result}")
         else:
             st.error("⚠️ 必須項目（企業名、勤務地、必須スキル）を入力してください。")
 
