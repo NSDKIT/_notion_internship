@@ -1,8 +1,5 @@
 import streamlit as st
 from datetime import datetime
-from notion_client import Client
-import os
-from dotenv import load_dotenv
 
 # ページ設定
 st.set_page_config(
@@ -11,52 +8,6 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded"
 )
-
-# Streamlitの状態を確認
-st.write("Streamlitの状態:")
-st.write(f"Streamlit version: {st.__version__}")
-st.write(f"Session state: {st.session_state}")
-
-# ページ設定を確認
-try:
-    st.write("Page config:")
-    st.write(st.session_state.get("_page_config", "No page config set"))
-except Exception as e:
-    st.write(f"Error getting page config: {str(e)}")
-
-# デバッグ情報の表示
-st.write("デバッグ情報:")
-st.write(f"NOTION_TOKEN exists: {'NOTION_TOKEN' in st.secrets}")
-st.write(f"NOTION_DATABASE_ID exists: {'NOTION_DATABASE_ID' in st.secrets}")
-
-# ローカル開発環境用の設定
-if os.path.exists(".env"):
-    load_dotenv()
-    NOTION_TOKEN = os.getenv("NOTION_TOKEN")
-    NOTION_DATABASE_ID = os.getenv("NOTION_DATABASE_ID")
-else:
-    # Streamlit Cloud用の設定
-    NOTION_TOKEN = st.secrets.get("NOTION_TOKEN")
-    NOTION_DATABASE_ID = st.secrets.get("NOTION_DATABASE_ID")
-
-# デバッグ情報の表示
-st.write(f"NOTION_TOKEN value: {NOTION_TOKEN is not None}")
-st.write(f"NOTION_DATABASE_ID value: {NOTION_DATABASE_ID is not None}")
-
-# Notionクライアントの初期化
-def get_notion_client():
-    if NOTION_TOKEN:
-        try:
-            client = Client(auth=NOTION_TOKEN)
-            st.write("Notionクライアントの初期化に成功しました")
-            return client
-        except Exception as e:
-            st.error(f"Notionクライアントの初期化に失敗しました: {str(e)}")
-            return None
-    return None
-
-# グローバル変数としてnotionクライアントを初期化
-notion = get_notion_client()
 
 # カスタムCSSの追加
 st.markdown("""
@@ -232,117 +183,7 @@ def generate_intern_info(company, industry, location, period, position, grade, s
         "必要なスキル・経験": skills
     }
 
-def create_notion_page(info):
-    """Notionに新しいページを作成する"""
-    try:
-        st.write("デバッグ: create_notion_page関数が呼び出されました")
-        
-        if not NOTION_TOKEN or not NOTION_DATABASE_ID:
-            st.error("⚠️ Notionの設定が完了していません。Streamlit SecretsにNOTION_TOKENとNOTION_DATABASE_IDを設定してください。")
-            return None
-            
-        if not notion:
-            st.error("⚠️ Notionクライアントの初期化に失敗しました。")
-            return None
-            
-        st.write("デバッグ: シークレットとクライアントのチェックを通過しました")
-        
-        # データベースIDをシークレットから取得
-        database_id = NOTION_DATABASE_ID
-        
-        # ページのプロパティを設定
-        properties = {
-            "インターン名": {"title": [{"text": {"content": info["インターン名"]}}]},
-            "企業名": {"rich_text": [{"text": {"content": info["企業名"]}}]},
-            "業界": {"select": {"name": info["業界"]}},
-            "勤務地": {"rich_text": [{"text": {"content": info["勤務地"]}}]},
-            "期間": {"select": {"name": info["期間"]}},
-            "職種": {"select": {"name": info["職種"]}},
-            "募集対象": {"select": {"name": info["募集対象"]}},
-            "報酬": {"select": {"name": info["報酬"]}},
-            "応募締切": {"date": {"start": info["応募締切"]}},
-            "開始予定日": {"date": {"start": info["開始予定日"]}},
-            "募集人数": {"number": int(info["募集人数"])}
-        }
-        
-        st.write("デバッグ: プロパティの設定が完了しました")
-        
-        # ページのコンテンツを設定
-        children = [
-            {
-                "object": "block",
-                "type": "heading_1",
-                "heading_1": {
-                    "rich_text": [{"type": "text", "text": {"content": info["インターン名"]}}]
-                }
-            },
-            {
-                "object": "block",
-                "type": "paragraph",
-                "paragraph": {
-                    "rich_text": [{"type": "text", "text": {"content": info["説明"]}}]
-                }
-            },
-            {
-                "object": "block",
-                "type": "heading_2",
-                "heading_2": {
-                    "rich_text": [{"type": "text", "text": {"content": "選考フロー"}}]
-                }
-            },
-            {
-                "object": "block",
-                "type": "paragraph",
-                "paragraph": {
-                    "rich_text": [{"type": "text", "text": {"content": info["選考フロー"]}}]
-                }
-            },
-            {
-                "object": "block",
-                "type": "heading_2",
-                "heading_2": {
-                    "rich_text": [{"type": "text", "text": {"content": "必要なスキル・経験"}}]
-                }
-            },
-            {
-                "object": "block",
-                "type": "paragraph",
-                "paragraph": {
-                    "rich_text": [{"type": "text", "text": {"content": info["必要なスキル・経験"]}}]
-                }
-            }
-        ]
-        
-        st.write("デバッグ: コンテンツの設定が完了しました")
-        
-        # ページを作成
-        st.write("デバッグ: ページの作成を開始します")
-        new_page = notion.pages.create(
-            parent={"database_id": database_id},
-            properties=properties,
-            children=children
-        )
-        
-        st.write("デバッグ: ページの作成が完了しました")
-        return new_page["url"]
-    except Exception as e:
-        st.error(f"Notionへの投稿に失敗しました: {str(e)}")
-        st.write(f"デバッグ: エラーの詳細: {str(e)}")
-        return None
-
 def main():
-    st.write("デバッグ: main関数が開始されました")
-    
-    # セッション状態の初期化
-    if 'notion_checkbox' not in st.session_state:
-        st.session_state['notion_checkbox'] = False
-    if 'generate_button' not in st.session_state:
-        st.session_state['generate_button'] = False
-    if 'info' not in st.session_state:
-        st.session_state['info'] = None
-    
-    st.write(f"デバッグ: セッション状態の初期化完了: {st.session_state}")
-    
     # ヘッダー
     st.markdown("""
     <div style='text-align: center; margin-bottom: 30px;'>
@@ -373,71 +214,31 @@ def main():
     with col1:
         st.markdown("### 基本情報")
         company = st.text_input("企業名", placeholder="例: 株式会社〇〇")
-        st.write(f"デバッグ: 企業名が入力されました: {company}")
         industry = st.selectbox("業界", INDUSTRIES)
-        st.write(f"デバッグ: 業界が選択されました: {industry}")
         location = st.text_input("勤務地", placeholder="例: 東京都渋谷区")
-        st.write(f"デバッグ: 勤務地が入力されました: {location}")
         period = st.selectbox("インターン期間", PERIODS)
-        st.write(f"デバッグ: インターン期間が選択されました: {period}")
         position = st.selectbox("インターン職種", POSITIONS)
-        st.write(f"デバッグ: インターン職種が選択されました: {position}")
         grade = st.selectbox("募集対象", GRADES)
-        st.write(f"デバッグ: 募集対象が選択されました: {grade}")
     
     with col2:
         st.markdown("### 詳細情報")
         salary = st.selectbox("報酬", SALARIES)
-        st.write(f"デバッグ: 報酬が選択されました: {salary}")
         selection_process = st.selectbox("選考フロー", SELECTION_PROCESS)
-        st.write(f"デバッグ: 選考フローが選択されました: {selection_process}")
         deadline = st.date_input("応募締切日")
-        st.write(f"デバッグ: 応募締切日が選択されました: {deadline}")
         start_date = st.date_input("インターン開始予定日")
-        st.write(f"デバッグ: インターン開始予定日が選択されました: {start_date}")
         capacity = st.number_input("募集人数", min_value=1, step=1)
-        st.write(f"デバッグ: 募集人数が入力されました: {capacity}")
         skills = st.text_area("必要なスキル・経験", placeholder="例:\n- Python\n- コミュニケーション能力\n- チームワーク", height=100)
-        st.write(f"デバッグ: 必要なスキル・経験が入力されました: {skills}")
     
     # 生成ボタン
-    if st.button("インターン情報を生成", key="generate_button"):
-        st.write("デバッグ: 生成ボタンがクリックされました")
+    if st.button("インターン情報を生成"):
         if company and location and skills:
-            st.write("デバッグ: 必須項目が入力されています")
             info = generate_intern_info(
                 company, industry, location, period, position, grade,
                 salary, selection_process, deadline.strftime("%Y-%m-%d"),
                 start_date.strftime("%Y-%m-%d"), str(capacity), skills
             )
             
-            # 生成された情報をセッション状態に保存
-            st.session_state['info'] = info
-            st.write(f"デバッグ: セッション状態に情報を保存しました: {st.session_state['info']}")
-            
             st.success("🎉 インターン情報が生成されました！")
-            
-            # Notionに投稿するかどうかを選択
-            st.write("チェックボックスの状態を確認:")
-            post_to_notion = st.checkbox("Notionに投稿する", key="notion_checkbox")
-            st.write(f"チェックボックスの値: {post_to_notion}")
-            st.write(f"チェックボックスのキー: notion_checkbox")
-            st.write(f"セッション状態: {st.session_state.get('notion_checkbox')}")
-            
-            # チェックボックスの状態をセッション状態に保存
-            st.session_state['notion_checkbox'] = post_to_notion
-            st.write(f"デバッグ: セッション状態にチェックボックスの状態を保存しました: {st.session_state['notion_checkbox']}")
-            
-            if post_to_notion:
-                st.write("デバッグ: Notionに投稿するが選択されました")
-                st.write(f"デバッグ: infoの内容: {info}")
-                page_url = create_notion_page(info)
-                if page_url:
-                    st.success(f"✅ Notionに投稿しました！ [ページを開く]({page_url})")
-                else:
-                    st.error("⚠️ Notionページの作成に失敗しました")
-            else:
-                st.write("デバッグ: Notionに投稿するが選択されていません")
             
             # 結果を表示
             st.markdown("### 生成されたインターン情報")
@@ -450,21 +251,6 @@ def main():
                 """, unsafe_allow_html=True)
         else:
             st.error("⚠️ 必須項目（企業名、勤務地、必要なスキル・経験）を入力してください。")
-            st.write("デバッグ: 必須項目が入力されていません")
-    
-    # セッション状態に保存された情報がある場合は表示
-    if st.session_state.get('info'):
-        st.write("デバッグ: セッション状態に保存された情報を表示します")
-        st.markdown("### 保存されたインターン情報")
-        for k, v in st.session_state['info'].items():
-            st.markdown(f"""
-            <div style='background-color: white; padding: 15px; border-radius: 10px; margin-bottom: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);'>
-                <strong style='color: #2c3e50;'>{k}:</strong>
-                <p style='color: #34495e; margin-top: 5px;'>{v}</p>
-            </div>
-            """, unsafe_allow_html=True)
-    else:
-        st.write("デバッグ: セッション状態に保存された情報はありません")
 
 if __name__ == "__main__":
     main() 
